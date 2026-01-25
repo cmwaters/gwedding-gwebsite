@@ -20,6 +20,9 @@ export const COLORS = {
   retroCream: "#FFF8E7",
   charcoal: "#2D2D2D",
   black: "#000000",
+  
+  // Background
+  skyBlue: "#48c7e0",
 } as const;
 
 export const GAME_CONFIG: GameConfig = {
@@ -28,23 +31,24 @@ export const GAME_CONFIG: GameConfig = {
     height: 300,
   },
   physics: {
-    gravity: 0.6,
-    jumpVelocity: -13,
+    gravity: 1.2,
+    jumpVelocity: -18,
     groundY: 250, // Ground line position from top
   },
   dog: {
-    startX: 80,
-    width: 60,
-    height: 40,
-    duckWidth: 80,
-    duckHeight: 25,
+    startX: 100,
+    width: 64,
+    height: 64,
+    duckWidth: 64,
+    duckHeight: 64,
   },
   obstacles: {
-    minSpawnInterval: 1500,
-    maxSpawnInterval: 3000,
-    speed: 6,
-    maxSpeed: 14,
-    speedIncrement: 0.001,
+    minSpawnInterval: 600, // Minimum time between obstacles (gets harder)
+    maxSpawnInterval: 3000, // Starting time between obstacles
+    speed: 8,
+    maxSpeed: 12, // Keep constant speed
+    speedIncrement: 0.01, 
+    intervalDecrement: 4, // How much to decrease spawn interval per second
     ground: {
       width: 40,
       height: 40,
@@ -52,12 +56,20 @@ export const GAME_CONFIG: GameConfig = {
     air: {
       width: 50,
       height: 30,
-      minY: 180, // Minimum Y position (higher on screen)
-      maxY: 200, // Maximum Y position
+      amplitude: 30, // How much the bird swoops up/down
+      centerOffset: 80, // How high above dog the center of the wave is
     },
   },
   scoring: {
-    pointsPerFrame: 0.15,
+    pointsPerFrame: 0.25,
+  },
+  follower: {
+    delay: 200, // Delay in milliseconds
+    offsetX: -70, // Position behind dog (in pixels)
+  },
+  background: {
+    scrollSpeed: 0.6, // Multiplier for parallax effect (slower than obstacles)
+    groundOffset: 105, // Fixed pixels from bottom of screen for ground position
   },
 };
 

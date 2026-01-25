@@ -15,31 +15,50 @@ export default function GameCanvas() {
     const container = containerRef.current;
     if (!canvas || !container) return;
 
-    // Initialize canvas size
-    canvas.width = GAME_CONFIG.canvas.width;
-    canvas.height = GAME_CONFIG.canvas.height;
-
-    // Create game engine
-    gameRef.current = new GameEngine(canvas);
-
-    // Handle resize
-    const handleResize = () => {
-      if (gameRef.current && container) {
-        const { width, height } = container.getBoundingClientRect();
-        gameRef.current.resize(width, height);
+    // Preload font before starting game
+    const preloadFont = async () => {
+      try {
+        await document.fonts.load('12px "Press Start 2P"');
+        console.log('Font loaded successfully');
+      } catch (error) {
+        console.warn('Font loading failed, continuing anyway:', error);
       }
     };
 
-    // Initial resize
-    handleResize();
-    window.addEventListener("resize", handleResize);
+    const initGame = async () => {
+      await preloadFont();
 
-    // Start game loop
-    gameRef.current.start();
-    setIsLoaded(true);
+      // Get initial container size
+      const { width, height } = container.getBoundingClientRect();
+      
+      // Initialize canvas size to container size
+      canvas.width = width;
+      canvas.height = height;
+
+      // Create game engine
+      gameRef.current = new GameEngine(canvas);
+
+      // Handle resize
+      const handleResize = () => {
+        if (gameRef.current && container) {
+          const { width, height } = container.getBoundingClientRect();
+          gameRef.current.resize(width, height);
+        }
+      };
+
+      // Initial resize (in case size changed)
+      handleResize();
+      window.addEventListener("resize", handleResize);
+
+      // Start game loop
+      gameRef.current.start();
+      setIsLoaded(true);
+    };
+
+    initGame();
 
     return () => {
-      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("resize", () => {});
       if (gameRef.current) {
         gameRef.current.destroy();
       }
@@ -49,12 +68,12 @@ export default function GameCanvas() {
   return (
     <div
       ref={containerRef}
-      className="w-full h-full flex items-center justify-center bg-retro-cream"
+      className="w-full h-full bg-sky-blue"
     >
       <canvas
         ref={canvasRef}
         className={`
-          border-4 border-charcoal rounded-lg shadow-lg
+          w-full h-full
           transition-opacity duration-300
           ${isLoaded ? "opacity-100" : "opacity-0"}
         `}

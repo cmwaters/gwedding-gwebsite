@@ -1,4 +1,4 @@
-export type GameState = "idle" | "playing" | "gameover";
+export type GameState = "idle" | "playing" | "gameover" | "won";
 
 export interface Position {
   x: number;
@@ -44,6 +44,7 @@ export interface GameConfig {
     speed: number;
     maxSpeed: number;
     speedIncrement: number;
+    intervalDecrement: number;
     ground: {
       width: number;
       height: number;
@@ -51,11 +52,19 @@ export interface GameConfig {
     air: {
       width: number;
       height: number;
-      minY: number;
-      maxY: number;
+      amplitude: number;
+      centerOffset: number;
     };
   };
   scoring: {
     pointsPerFrame: number;
+  };
+  follower: {
+    delay: number;
+    offsetX: number;
+  };
+  background: {
+    scrollSpeed: number;
+    groundOffset: number;
   };
 }

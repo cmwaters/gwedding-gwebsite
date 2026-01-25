@@ -7,16 +7,45 @@ export class Dog {
   public state: DogState;
   private animationFrame: number;
   private animationTimer: number;
+  private groundY: number;
+  
+  // Sprite
+  private sprite: HTMLImageElement | null = null;
+  private spriteLoaded: boolean = false;
+  
+  // Sprite dimensions (64x256 total, four 64x64 frames stacked vertically)
+  // Frame 0: Running 1, Frame 1: Running 2, Frame 2: Jumping, Frame 3: Ducking
+  private readonly frameWidth: number = 64;
+  private readonly frameHeight: number = 64;
 
-  constructor() {
+  constructor(canvasWidth: number = GAME_CONFIG.canvas.width, groundY: number = GAME_CONFIG.physics.groundY) {
+    this.groundY = groundY;
+    
     this.position = {
       x: GAME_CONFIG.dog.startX,
-      y: GAME_CONFIG.physics.groundY - GAME_CONFIG.dog.height,
+      y: this.groundY - GAME_CONFIG.dog.height,
     };
     this.velocity = { vx: 0, vy: 0 };
     this.state = "running";
     this.animationFrame = 0;
     this.animationTimer = 0;
+    
+    // Load sprite
+    this.loadSprite();
+  }
+  
+  private loadSprite(): void {
+    this.sprite = new Image();
+    this.sprite.onload = () => {
+      this.spriteLoaded = true;
+    };
+    this.sprite.src = "/viz_running.png";
+  }
+
+  updateScale(canvasWidth: number, groundY: number): void {
+    this.groundY = groundY;
+    // Keep position consistent
+    this.position.y = this.groundY - this.height;
   }
 
   get width(): number {
@@ -32,7 +61,7 @@ export class Dog {
   }
 
   get isOnGround(): boolean {
-    return this.position.y >= GAME_CONFIG.physics.groundY - this.height;
+    return this.position.y >= this.groundY - this.height;
   }
 
   get hitbox(): Hitbox {
@@ -59,22 +88,22 @@ export class Dog {
       } else if (this.isOnGround) {
         this.state = "ducking";
         // Adjust Y position so dog stays on ground when ducking
-        this.position.y = GAME_CONFIG.physics.groundY - this.height;
+        this.position.y = this.groundY - this.height;
       }
     } else if (this.state === "ducking" && this.isOnGround) {
       this.state = "running";
       // Adjust Y position back when standing
-      this.position.y = GAME_CONFIG.physics.groundY - this.height;
+      this.position.y = this.groundY - this.height;
     }
   }
 
-  update(deltaTime: number): void {
+  update(deltaTime: number, normalizedDelta: number = 1): void {
     // Apply gravity
-    this.velocity.vy += GAME_CONFIG.physics.gravity;
-    this.position.y += this.velocity.vy;
+    this.velocity.vy += GAME_CONFIG.physics.gravity * normalizedDelta;
+    this.position.y += this.velocity.vy * normalizedDelta;
 
     // Ground collision
-    const groundY = GAME_CONFIG.physics.groundY - this.height;
+    const groundY = this.groundY - this.height;
     if (this.position.y >= groundY) {
       this.position.y = groundY;
       this.velocity.vy = 0;
@@ -94,67 +123,47 @@ export class Dog {
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
-    ctx.fillStyle = COLORS.orange;
-
-    // Draw based on state
-    if (this.state === "ducking") {
-      // Wider, shorter rectangle for ducking
-      ctx.fillRect(
-        this.position.x,
-        this.position.y,
-        this.width,
-        this.height
-      );
-    } else {
-      // Normal body
-      ctx.fillRect(
-        this.position.x,
-        this.position.y,
-        this.width,
-        this.height
-      );
-
-      // Simple leg animation (two frames)
-      const legWidth = 8;
-      const legHeight = 10;
-      const legY = this.position.y + this.height;
-
-      if (this.state === "running") {
-        if (this.animationFrame === 0) {
-          // Frame 1: legs apart
-          ctx.fillRect(this.position.x + 10, legY - 5, legWidth, legHeight);
-          ctx.fillRect(
-            this.position.x + this.width - 18,
-            legY - 5,
-            legWidth,
-            legHeight
-          );
-        } else {
-          // Frame 2: legs together
-          ctx.fillRect(this.position.x + 15, legY - 5, legWidth, legHeight);
-          ctx.fillRect(
-            this.position.x + this.width - 23,
-            legY - 5,
-            legWidth,
-            legHeight
-          );
-        }
-      } else if (this.state === "jumping") {
-        // Legs tucked when jumping
-        ctx.fillRect(this.position.x + 12, legY - 8, legWidth, 6);
-        ctx.fillRect(this.position.x + this.width - 20, legY - 8, legWidth, 6);
-      }
-
-      // Simple eye
-      ctx.fillStyle = COLORS.charcoal;
-      ctx.fillRect(this.position.x + this.width - 12, this.position.y + 8, 5, 5);
+    if (!this.spriteLoaded || !this.sprite) {
+      // Fallback: draw orange rectangle while loading
+      ctx.fillStyle = COLORS.orange;
+      ctx.fillRect(this.position.x, this.position.y, this.width, this.height);
+      return;
     }
+    
+    // Determine which frame to use based on state
+    let frameIndex: number;
+    switch (this.state) {
+      case "running":
+        // Alternate between frames 0 and 1
+        frameIndex = this.animationFrame;
+        break;
+      case "jumping":
+        // Frame 2 for jumping
+        frameIndex = 2;
+        break;
+      case "ducking":
+        // Frame 3 for ducking
+        frameIndex = 3;
+        break;
+      default:
+        frameIndex = 0;
+    }
+    
+    // Source Y position based on frame index
+    const sourceY = frameIndex * this.frameHeight;
+    
+    // Draw the sprite scaled to the dog's dimensions
+    ctx.drawImage(
+      this.sprite,
+      0, sourceY, this.frameWidth, this.frameHeight, // Source rect
+      this.position.x, this.position.y, this.width, this.height // Destination rect
+    );
   }
 
   reset(): void {
     this.position = {
       x: GAME_CONFIG.dog.startX,
-      y: GAME_CONFIG.physics.groundY - GAME_CONFIG.dog.height,
+      y: this.groundY - GAME_CONFIG.dog.height,
     };
     this.velocity = { vx: 0, vy: 0 };
     this.state = "running";

@@ -1,4 +1,4 @@
-export type GameState = "idle" | "playing" | "gameover" | "won";
+export type GameState = "idle" | "playing" | "arriving" | "gameover" | "won";
 
 export interface Position {
   x: number;
@@ -17,9 +17,9 @@ export interface Hitbox {
   height: number;
 }
 
-export type DogState = "running" | "jumping" | "ducking";
+export type DogState = "running" | "jumping";
 
-export type ObstacleType = "ground" | "air";
+export type ObstacleType = "low" | "high";
 
 export interface GameConfig {
   canvas: {
@@ -35,8 +35,6 @@ export interface GameConfig {
     startX: number;
     width: number;
     height: number;
-    duckWidth: number;
-    duckHeight: number;
   };
   obstacles: {
     minSpawnInterval: number;
@@ -45,26 +43,30 @@ export interface GameConfig {
     maxSpeed: number;
     speedIncrement: number;
     intervalDecrement: number;
-    ground: {
-      width: number;
-      height: number;
+    ballRadius: number;
+    endlessMinSpawnInterval: number;
+    endlessMaxSpeed: number;
+    lowArc: {
+      peakHeight: number; // how high the ball bounces (from ground) - dog must jump
+      bounceCount: number; // number of bounces across screen
     };
-    air: {
-      width: number;
-      height: number;
-      amplitude: number;
-      centerOffset: number;
+    highArc: {
+      peakHeight: number; // how high the ball bounces - dog stays on ground
+      bounceCount: number;
     };
   };
   scoring: {
     pointsPerFrame: number;
-  };
-  follower: {
-    delay: number;
-    offsetX: number;
+    finishScore: number;
   };
   background: {
     scrollSpeed: number;
     groundOffset: number;
+  };
+  mobile: {
+    startX: number;
+    speed: number;
+    maxSpeed: number;
+    endlessMaxSpeed: number;
   };
 }

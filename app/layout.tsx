@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Run to Villa Bettoni",
-  description: "A wedding game - Help the dog reach Villa Bettoni!",
+  title: "Cal & Euge — Wedding",
+  description: "You're invited to Cal & Euge's wedding at Villa Bettoni!",
 };
 
 export default function RootLayout({

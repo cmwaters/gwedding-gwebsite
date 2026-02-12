@@ -2,60 +2,80 @@
 @import "tailwindcss";
 
 @theme {
-  /* Citrus Colors */
-  --color-lemon: #FFD93D;
-  --color-orange: #FF9F1C;
-  --color-tangerine: #FF6B35;
-  --color-grapefruit: #FF4D6D;
-  --color-lime: #C5E063;
-  --color-citrus-light: #FFF3B0;
+  /* Warm Tones */
+  --color-coral: #E8735A;
+  --color-amber: #F0A830;
+  --color-peach: #F4B89A;
 
-  /* Forget-Me-Not Blues */
-  --color-forget-me-not: #7EC8E3;
-  --color-forget-me-not-deep: #5BA4C9;
-  --color-forget-me-not-light: #B8E1F2;
-  --color-periwinkle: #9DB4FF;
+  /* Blues */
+  --color-cornflower: #3A6BA8;
+  --color-powder: #B8C9DC;
+  --color-sky-blue: #48c7e0;
 
   /* Neutrals */
-  --color-retro-cream: #FFF8E7;
+  --color-white: #FFFFFF;
+  --color-cream: #FFF8E7;
   --color-charcoal: #2D2D2D;
-}
-
-:root {
-  /* Citrus Colors */
-  --lemon: #FFD93D;
-  --orange: #FF9F1C;
-  --tangerine: #FF6B35;
-  --grapefruit: #FF4D6D;
-  --lime: #C5E063;
-  --citrus-light: #FFF3B0;
-
-  /* Forget-Me-Not Blues */
-  --forget-me-not: #7EC8E3;
-  --forget-me-not-deep: #5BA4C9;
-  --forget-me-not-light: #B8E1F2;
-  --periwinkle: #9DB4FF;
-
-  /* Neutrals */
-  --white: #FFFFFF;
-  --retro-cream: #FFF8E7;
-  --charcoal: #2D2D2D;
-  --black: #000000;
+  --color-charcoal-light: #3D3D3D;
 }
 
 * {
   box-sizing: border-box;
-  padding: 0;
-  margin: 0;
 }
 
 html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
-  background-color: var(--retro-cream);
+  background-color: var(--color-charcoal);
 }
 
 body {
   font-family: 'Press Start 2P', monospace;
+}
+
+/* Retro animations */
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-blink {
+  animation: blink 1s step-end infinite;
+}
+
+.animate-fade-in {
+  animation: fadeIn 200ms ease-in forwards;
+}
+
+/* Retro form inputs */
+.retro-input {
+  background-color: rgba(45, 75, 120, 0.5);
+  border: 2px solid var(--color-amber);
+  color: var(--color-white);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+  padding: 8px 10px;
+  width: 100%;
+  outline: none;
+  border-radius: 0;
+  -webkit-appearance: none;
+}
+
+.retro-input:focus {
+  border-color: var(--color-amber);
+}
+
+.retro-input::placeholder {
+  color: #888;
+}
+
+.retro-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

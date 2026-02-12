@@ -1,58 +1,77 @@
 import { Hitbox, ObstacleType, Position } from "../types";
-import { COLORS, GAME_CONFIG } from "../constants";
+import { GAME_CONFIG } from "../constants";
+
+// Shared sprite across all Obstacle instances
+let sharedSprite: HTMLImageElement | null = null;
+let spriteLoaded = false;
+
+function loadSharedSprite(): HTMLImageElement {
+  if (!sharedSprite) {
+    sharedSprite = new Image();
+    sharedSprite.onload = () => {
+      spriteLoaded = true;
+    };
+    sharedSprite.src = "/soccer_ball.png";
+  }
+  return sharedSprite;
+}
 
 export class Obstacle {
   public position: Position;
   public type: ObstacleType;
-  public width: number;
-  public height: number;
   public speed: number;
-  private initialY: number; // Starting Y position for cosine wave
-  private distanceTraveled: number; // Track distance for cosine wave calculation
-  private canvasWidth: number; // Store canvas width for frequency calculation
+  private radius: number;
+  private groundY: number;
+  private distanceTraveled: number;
+  private canvasWidth: number;
+  private peakHeight: number;
+  private bounceCount: number;
+  private rotation: number; // Ball spin
+  private sprite: HTMLImageElement;
 
   constructor(type: ObstacleType, speed: number, canvasWidth: number, groundY: number) {
     this.type = type;
     this.speed = speed;
-    this.distanceTraveled = 0;
     this.canvasWidth = canvasWidth;
+    this.groundY = groundY;
+    this.radius = GAME_CONFIG.obstacles.ballRadius;
+    this.rotation = 0;
+    this.sprite = loadSharedSprite();
 
-    if (type === "ground") {
-      this.width = GAME_CONFIG.obstacles.ground.width;
-      this.height = GAME_CONFIG.obstacles.ground.height;
-      this.position = {
-        x: canvasWidth,
-        y: groundY - this.height,
-      };
-      this.initialY = this.position.y;
-    } else {
-      // Air obstacle
-      this.width = GAME_CONFIG.obstacles.air.width;
-      this.height = GAME_CONFIG.obstacles.air.height;
-      
-      // Start high up when entering the screen (will descend via cosine wave)
-      const dogHeight = GAME_CONFIG.dog.height;
-      const amplitude = GAME_CONFIG.obstacles.air.amplitude;
-      
-      // Bird starts at its highest point (will descend to dog level)
-      // Center point is offset above dog's head
-      const centerY = groundY - dogHeight - GAME_CONFIG.obstacles.air.centerOffset;
-      const startY = centerY - amplitude; // Start amplitude above center
-      
-      this.position = {
-        x: canvasWidth,
-        y: startY,
-      };
-      this.initialY = centerY; // Center of the wave is offset
-    }
+    const config = type === "low"
+      ? GAME_CONFIG.obstacles.lowArc
+      : GAME_CONFIG.obstacles.highArc;
+
+    this.peakHeight = config.peakHeight;
+    this.bounceCount = config.bounceCount;
+
+    // Start at right edge of screen
+    // Offset low arc balls by half a bounce so they hit peak height
+    // when crossing the dog's position instead of being at ground level
+    const totalTravel = canvasWidth + 100;
+    const halfBounce = totalTravel / (this.bounceCount * 2);
+    this.distanceTraveled = type === "low" ? halfBounce : 0;
+
+    this.position = {
+      x: canvasWidth,
+      y: groundY - this.radius, // Will be corrected on first update
+    };
+  }
+
+  get width(): number {
+    return this.radius * 2;
+  }
+
+  get height(): number {
+    return this.radius * 2;
   }
 
   get hitbox(): Hitbox {
     return {
-      x: this.position.x,
-      y: this.position.y,
-      width: this.width,
-      height: this.height,
+      x: this.position.x - this.radius,
+      y: this.position.y - this.radius,
+      width: this.radius * 2,
+      height: this.radius * 2,
     };
   }
 
@@ -61,70 +80,48 @@ export class Obstacle {
   }
 
   update(normalizedDelta: number = 1): void {
-    // Move obstacle horizontally
     const moveAmount = this.speed * normalizedDelta;
     this.position.x -= moveAmount;
     this.distanceTraveled += moveAmount;
-    
-    // Apply cosine wave motion to air obstacles
-    if (this.type === "air") {
-      // Cosine wave parameters
-      // Bird should complete half a cosine wave from screen edge to dog position
-      // Dog is at ~100px from left, so bird travels (canvasWidth - 100) pixels
-      const travelDistance = this.canvasWidth - GAME_CONFIG.dog.startX;
-      const frequency = Math.PI / travelDistance; // Half cosine wave across the travel distance
-      const amplitude = GAME_CONFIG.obstacles.air.amplitude;
-      
-      // Cosine wave: starts at -amplitude (high), descends to +amplitude (low)
-      // position.y = initialY - amplitude * cos(x)
-      this.position.y = this.initialY - amplitude * Math.cos(this.distanceTraveled * frequency);
-    }
+
+    // Spin the ball (proportional to speed)
+    this.rotation -= 0.15 * normalizedDelta;
+
+    // Bouncing arc using |sin(x)|
+    // The ball completes bounceCount full bounces across the screen width
+    const totalTravel = this.canvasWidth + 100; // total distance ball travels
+    const frequency = (this.bounceCount * Math.PI) / totalTravel;
+    const bounce = Math.abs(Math.sin(this.distanceTraveled * frequency));
+
+    // Y position: ground level minus the bounce height
+    this.position.y = this.groundY - this.radius - bounce * this.peakHeight;
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
-    ctx.fillStyle = COLORS.charcoal;
+    ctx.save();
+    ctx.translate(this.position.x, this.position.y);
+    ctx.rotate(this.rotation);
 
-    if (this.type === "ground") {
-      // Draw a simple cactus-like shape
-      ctx.fillRect(
-        this.position.x,
-        this.position.y,
-        this.width,
-        this.height
-      );
-      // Add some texture
-      ctx.fillStyle = COLORS.retroCream;
-      const textureWidth = 6;
-      const textureMargin = 8;
-      ctx.fillRect(
-        this.position.x + textureMargin,
-        this.position.y + textureMargin,
-        textureWidth,
-        this.height - textureMargin * 2
-      );
-      ctx.fillRect(
-        this.position.x + this.width - textureMargin - textureWidth,
-        this.position.y + textureMargin * 1.5,
-        textureWidth,
-        this.height - textureMargin * 2.5
+    const size = this.radius * 2;
+
+    if (spriteLoaded && this.sprite.complete) {
+      // Draw the soccer ball sprite, centered on position
+      ctx.drawImage(
+        this.sprite,
+        -this.radius, -this.radius,
+        size, size
       );
     } else {
-      // Draw a bird-like shape for air obstacles
-      ctx.fillRect(
-        this.position.x,
-        this.position.y,
-        this.width,
-        this.height
-      );
-      // Wings
-      const wingExtension = 5;
-      const wingHeight = 6;
-      ctx.fillRect(
-        this.position.x - wingExtension,
-        this.position.y + this.height / 2 - wingHeight / 2,
-        this.width + wingExtension * 2,
-        wingHeight
-      );
+      // Fallback: simple circle while image loads
+      ctx.beginPath();
+      ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fill();
+      ctx.strokeStyle = "#2D2D2D";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
     }
+
+    ctx.restore();
   }
 }

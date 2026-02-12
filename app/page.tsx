@@ -1,11 +1,13 @@
-import GameCanvas from "./components/game/GameCanvas";
+import { LanguageProvider } from "./i18n";
+import { GuestProvider } from "./context/GuestContext";
+import HomeContent from "./components/HomeContent";
 
 export default function Home() {
   return (
-    <main className="h-screen w-screen flex flex-col bg-sky-blue overflow-hidden">
-      <div className="flex-1 w-full">
-        <GameCanvas />
-      </div>
-    </main>
+    <GuestProvider guestGroup={null}>
+      <LanguageProvider>
+        <HomeContent />
+      </LanguageProvider>
+    </GuestProvider>
   );
 }

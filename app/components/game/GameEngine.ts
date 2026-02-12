@@ -1,7 +1,6 @@
 import { GameState, ObstacleType } from "./types";
 import { COLORS, GAME_CONFIG, STORAGE_KEYS } from "./constants";
 import { Dog } from "./entities/Dog";
-import { Follower } from "./entities/Follower";
 import { Obstacle } from "./entities/Obstacle";
 import { checkCollision } from "./utils/collision";
 
@@ -9,7 +8,6 @@ export class GameEngine {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private dog: Dog;
-  private follower: Follower;
   private obstacles: Obstacle[];
   private gameState: GameState;
   private score: number;
@@ -20,17 +18,17 @@ export class GameEngine {
   private currentSpeed: number;
   private animationFrameId: number | null;
 
-  // Input state
-  private keys: Set<string>;
-  private isDucking: boolean;
+
+  // Endless mode — no villa, obstacles forever
+  private endless: boolean = false;
 
   // Finish line
   private villaTriggered: boolean = false; // Has the villa background started appearing
   private villaTileOffset: number = 0; // Offset from backgroundX where villa tile starts
-  private readonly finishScore: number = 327;
 
   // Difficulty scaling
   private currentSpawnInterval: number; // Current max spawn interval
+  private doubleSpawnTimer: number = 0; // Countdown for delayed second ball
 
   // Background scrolling
   private backgroundImage: HTMLImageElement | null = null;
@@ -41,14 +39,17 @@ export class GameEngine {
   private villaImage: HTMLImageElement | null = null;
   private villaLoaded: boolean = false;
 
-  // Scale factors for responsive design
-  private get scaleX(): number {
-    return this.canvas.width / GAME_CONFIG.canvas.width;
-  }
+  // Couple sprite (Cal & Euge at the villa)
+  private coupleImage: HTMLImageElement | null = null;
+  private coupleLoaded: boolean = false;
+  private coupleX: number = 0; // X position where couple stands (set when arriving)
+  private coupleOffsetFromVilla: number = 0; // Fixed offset from villa position (set once)
 
-  private get scaleY(): number {
-    return this.canvas.height / GAME_CONFIG.canvas.height;
-  }
+  // Callback when game ends (gameover or won)
+  public onGameEnd: ((result: "gameover" | "won", score: number) => void) | null = null;
+
+  // Mobile detection — slower balls, dog closer to left
+  private isMobile: boolean;
 
   private get groundY(): number {
     // Fixed offset from bottom of canvas - matches background image
@@ -61,8 +62,14 @@ export class GameEngine {
     if (!ctx) throw new Error("Could not get canvas context");
     this.ctx = ctx;
 
+    this.isMobile = canvas.width < 600;
+
     this.dog = new Dog(canvas.width, this.groundY);
-    this.follower = new Follower(canvas.width, this.groundY);
+    // Apply mobile dog position immediately
+    if (this.isMobile) {
+      this.dog.updateScale(canvas.width, this.groundY, GAME_CONFIG.mobile.startX);
+    }
+
     this.obstacles = [];
     this.gameState = "idle";
     this.score = 0;
@@ -70,11 +77,9 @@ export class GameEngine {
     this.lastTime = 0;
     this.obstacleTimer = 0;
     this.nextObstacleTime = this.getRandomSpawnTime();
-    this.currentSpeed = GAME_CONFIG.obstacles.speed; // Fixed speed (not scaled)
+    this.currentSpeed = this.isMobile ? GAME_CONFIG.mobile.speed : GAME_CONFIG.obstacles.speed;
     this.currentSpawnInterval = GAME_CONFIG.obstacles.maxSpawnInterval;
     this.animationFrameId = null;
-    this.keys = new Set();
-    this.isDucking = false;
     this.villaTriggered = false;
     this.villaTileOffset = 0;
 
@@ -97,6 +102,13 @@ export class GameEngine {
       this.villaLoaded = true;
     };
     this.villaImage.src = "/villa.png";
+
+    // Load couple sprite (Cal & Euge)
+    this.coupleImage = new Image();
+    this.coupleImage.onload = () => {
+      this.coupleLoaded = true;
+    };
+    this.coupleImage.src = "/cal_and_euge.png";
   }
 
   private loadHighScore(): number {
@@ -122,102 +134,92 @@ export class GameEngine {
   private setupInputListeners(): void {
     // Keyboard events
     window.addEventListener("keydown", this.handleKeyDown);
-    window.addEventListener("keyup", this.handleKeyUp);
 
     // Touch events
     this.canvas.addEventListener("touchstart", this.handleTouchStart);
-    this.canvas.addEventListener("touchend", this.handleTouchEnd);
-
-    // Prevent scrolling on touch
     this.canvas.addEventListener("touchmove", (e) => e.preventDefault(), {
       passive: false,
     });
   }
 
   private handleKeyDown = (e: KeyboardEvent): void => {
-    if (["Space", "ArrowUp", "ArrowDown", "KeyW", "KeyS"].includes(e.code)) {
+    const tag = (e.target as HTMLElement)?.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+
+    if (["Space", "ArrowUp"].includes(e.code)) {
       e.preventDefault();
     }
 
-    this.keys.add(e.code);
-
-    if (this.gameState === "idle" || this.gameState === "gameover") {
+    // Only handle input when playing — idle/gameover/won are handled by React overlays
+    if (this.gameState === "playing") {
       if (e.code === "Space" || e.code === "ArrowUp") {
-        this.startGame();
-      }
-    } else if (this.gameState === "won") {
-      if (e.code === "Space" || e.code === "ArrowUp") {
-        this.startGame();
-      }
-    } else if (this.gameState === "playing") {
-      if (e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyW") {
         this.dog.jump();
       }
-      if (e.code === "ArrowDown" || e.code === "KeyS") {
-        this.isDucking = true;
-        this.dog.duck(true);
-      }
     }
   };
-
-  private handleKeyUp = (e: KeyboardEvent): void => {
-    this.keys.delete(e.code);
-
-    if (e.code === "ArrowDown" || e.code === "KeyS") {
-      this.isDucking = false;
-      this.dog.duck(false);
-    }
-  };
-
-  private touchStartY: number = 0;
 
   private handleTouchStart = (e: TouchEvent): void => {
     e.preventDefault();
-    this.touchStartY = e.touches[0].clientY;
-
-    if (this.gameState === "idle" || this.gameState === "gameover" || this.gameState === "won") {
-      this.startGame();
-    } else if (this.gameState === "playing") {
+    if (this.gameState === "playing") {
       this.dog.jump();
     }
   };
 
-  private handleTouchEnd = (e: TouchEvent): void => {
-    const touchEndY = e.changedTouches[0].clientY;
-    const deltaY = touchEndY - this.touchStartY;
-
-    // Swipe down to duck
-    if (deltaY > 30 && this.gameState === "playing") {
-      this.dog.duck(true);
-      setTimeout(() => this.dog.duck(false), 500);
-    }
-
-    this.isDucking = false;
-  };
-
-  private startGame(): void {
-    this.gameState = "playing";
-    this.score = 0;
+  /** Shared reset logic for both startGame and returnToIdle */
+  private resetState(): void {
     this.obstacles = [];
-    this.currentSpeed = GAME_CONFIG.obstacles.speed; // Fixed speed (not scaled)
-    this.currentSpawnInterval = GAME_CONFIG.obstacles.maxSpawnInterval;
-    this.obstacleTimer = 0;
-    this.nextObstacleTime = this.getRandomSpawnTime();
+    this.score = 0;
     this.dog.reset();
-    this.follower.reset();
-    this.isDucking = false;
     this.villaTriggered = false;
     this.villaTileOffset = 0;
     this.backgroundX = 0;
+    this.coupleX = 0;
+    this.coupleOffsetFromVilla = 0;
+    this.doubleSpawnTimer = 0;
+  }
+
+  /** Called externally by React to start/restart the game */
+  public startGame(mode: "normal" | "endless" = "normal"): void {
+    this.resetState();
+    this.endless = mode === "endless";
+    this.gameState = "playing";
+    this.currentSpeed = this.isMobile ? GAME_CONFIG.mobile.speed : GAME_CONFIG.obstacles.speed;
+    this.currentSpawnInterval = GAME_CONFIG.obstacles.maxSpawnInterval;
+    this.obstacleTimer = 0;
+    this.nextObstacleTime = this.getRandomSpawnTime();
+  }
+
+  /** Called externally by React to return to idle (e.g. when showing menu) */
+  public returnToIdle(): void {
+    this.resetState();
+    this.gameState = "idle";
   }
 
   private spawnObstacle(): void {
-    // Random type selection, 50/50 split between ground and air obstacles
-    const type: ObstacleType = Math.random() > 0.5 ? "ground" : "air";
+    // Random type selection, 50/50 split between low and high arc balls
+    const type: ObstacleType = Math.random() > 0.5 ? "low" : "high";
     this.obstacles.push(new Obstacle(type, this.currentSpeed, this.canvas.width, this.groundY));
   }
 
   private update(deltaTime: number): void {
+    // Handle "arriving" state: dog walks toward Cal & Euge
+    if (this.gameState === "arriving") {
+      const normalizedDelta = deltaTime / 16.67;
+      const walkSpeed = 2.5; // px per normalized frame
+
+      // Keep dog animation running (walking)
+      this.dog.update(deltaTime, normalizedDelta);
+
+      // Move dog rightward toward the couple
+      this.dog.position.x += walkSpeed * normalizedDelta;
+
+      // When dog reaches the couple, end the game
+      if (this.dog.position.x + this.dog.width >= this.coupleX) {
+        this.endGame("won");
+      }
+      return;
+    }
+
     if (this.gameState !== "playing") return;
 
     // Normalize deltaTime to 60 FPS (16.67ms per frame)
@@ -227,19 +229,8 @@ export class GameEngine {
     // Update dog
     this.dog.update(deltaTime, normalizedDelta);
 
-    // Record dog's position for follower
-    this.follower.recordFrame(this.dog.position, this.dog.state, performance.now());
-
-    // Update follower
-    this.follower.update(deltaTime, performance.now());
-
-    // Maintain duck state if key is held
-    if (this.isDucking && this.dog.isOnGround) {
-      this.dog.duck(true);
-    }
-
-    // Trigger villa background when approaching finish score
-    if (!this.villaTriggered && this.score >= this.finishScore - 50 && this.backgroundImage) {
+    // Trigger villa background when approaching finish score (skip in endless mode)
+    if (!this.endless && !this.villaTriggered && this.score >= GAME_CONFIG.scoring.finishScore - 50 && this.backgroundImage) {
       this.villaTriggered = true;
       // Calculate tile width
       const scaledWidth = this.backgroundImage.width * 0.5;
@@ -252,18 +243,27 @@ export class GameEngine {
       }
       // Store offset from backgroundX (this stays constant)
       this.villaTileOffset = x - this.backgroundX;
+      // Store couple offset relative to villa center (scrolls with the villa)
+      this.coupleOffsetFromVilla = scaledWidth / 2 + 70;
     }
 
-    // Check if villa center is at screen center (win condition)
+    // Update couple position to scroll with the villa
     if (this.villaTriggered && this.backgroundImage) {
+      const villaX = this.backgroundX + this.villaTileOffset;
+      this.coupleX = villaX + this.coupleOffsetFromVilla;
+    }
+
+    // Check if villa center is at screen center (win condition — skip in endless mode)
+    // Enter "arriving" state instead of immediately ending
+    if (!this.endless && this.villaTriggered && this.backgroundImage) {
       const scaledWidth = this.backgroundImage.width * 0.5;
-      // Calculate current villa position from backgroundX and offset
       const villaX = this.backgroundX + this.villaTileOffset;
       const villaCenterX = villaX + scaledWidth / 2;
       const screenCenterX = this.canvas.width / 2;
-      
+
       if (villaCenterX <= screenCenterX) {
-        this.winGame();
+        // Transition to "arriving" — background stops, dog walks to couple
+        this.gameState = "arriving";
         return;
       }
     }
@@ -282,20 +282,47 @@ export class GameEngine {
       this.obstacleTimer += deltaTime;
       if (this.obstacleTimer >= this.nextObstacleTime) {
         this.spawnObstacle();
+
+        // Double ball chance — increases as spawn interval decreases
+        // At maxSpawnInterval (2000ms): 0% chance
+        // At minSpawnInterval (800ms or 0ms endless): up to 40% chance
+        const maxInt = GAME_CONFIG.obstacles.maxSpawnInterval;
+        const progress = Math.max(0, 1 - this.currentSpawnInterval / maxInt);
+        const doubleChance = progress * 0.4;
+        if (Math.random() < doubleChance) {
+          // Schedule a second ball after a short delay (150-300ms)
+          this.doubleSpawnTimer = 150 + Math.random() * 150;
+        }
+
         this.obstacleTimer = 0;
         this.nextObstacleTime = this.getRandomSpawnTime();
+      }
+
+      // Handle delayed double spawn
+      if (this.doubleSpawnTimer > 0) {
+        this.doubleSpawnTimer -= deltaTime;
+        if (this.doubleSpawnTimer <= 0) {
+          this.spawnObstacle();
+          this.doubleSpawnTimer = 0;
+        }
       }
     }
 
     // Decrease spawn interval over time (frame independent)
+    const minInterval = this.endless
+      ? GAME_CONFIG.obstacles.endlessMinSpawnInterval
+      : GAME_CONFIG.obstacles.minSpawnInterval;
     this.currentSpawnInterval = Math.max(
-      GAME_CONFIG.obstacles.minSpawnInterval,
+      minInterval,
       this.currentSpawnInterval - GAME_CONFIG.obstacles.intervalDecrement * normalizedDelta
     );
 
     // Increase speed over time (frame independent)
+    const maxSpeed = this.endless
+      ? (this.isMobile ? GAME_CONFIG.mobile.endlessMaxSpeed : GAME_CONFIG.obstacles.endlessMaxSpeed)
+      : (this.isMobile ? GAME_CONFIG.mobile.maxSpeed : GAME_CONFIG.obstacles.maxSpeed);
     this.currentSpeed = Math.min(
-      GAME_CONFIG.obstacles.maxSpeed,
+      maxSpeed,
       this.currentSpeed + GAME_CONFIG.obstacles.speedIncrement * normalizedDelta
     );
 
@@ -306,33 +333,22 @@ export class GameEngine {
     // Background scrolls slower than obstacles for parallax effect
     this.backgroundX -= this.currentSpeed * normalizedDelta * GAME_CONFIG.background.scrollSpeed;
 
-    // Check collisions for both dog and follower
+    // Check collisions
     for (const obstacle of this.obstacles) {
       if (checkCollision(this.dog.hitbox, obstacle.hitbox)) {
-        this.gameOver();
-        break;
-      }
-      if (checkCollision(this.follower.hitbox, obstacle.hitbox)) {
-        this.gameOver();
+        this.endGame("gameover");
         break;
       }
     }
   }
 
-  private gameOver(): void {
-    this.gameState = "gameover";
+  private endGame(result: "gameover" | "won"): void {
+    this.gameState = result;
     if (this.score > this.highScore) {
       this.highScore = this.score;
       this.saveHighScore();
     }
-  }
-
-  private winGame(): void {
-    this.gameState = "won";
-    if (this.score > this.highScore) {
-      this.highScore = this.score;
-      this.saveHighScore();
-    }
+    this.onGameEnd?.(result, Math.floor(this.score));
   }
 
   private draw(): void {
@@ -348,10 +364,10 @@ export class GameEngine {
       this.drawScrollingBackground(width, height);
     }
 
-    const groundY = this.groundY;
-
-    // Draw follower (behind dog, so draw first)
-    this.follower.draw(this.ctx);
+    // Draw couple sprite (Cal & Euge) — visible as soon as villa is triggered (scrolls in with it)
+    if (this.villaTriggered && this.coupleLoaded && this.coupleImage) {
+      this.drawCouple();
+    }
 
     // Draw obstacles
     for (const obstacle of this.obstacles) {
@@ -361,7 +377,7 @@ export class GameEngine {
     // Draw dog (in front)
     this.dog.draw(this.ctx);
 
-    // Draw UI
+    // Draw UI (score only when playing)
     this.drawUI();
   }
 
@@ -395,8 +411,8 @@ export class GameEngine {
     // If villa is triggered, replace one tile with villa.png
     while (x < width + scaledWidth) {
       // Check if this tile position should be the villa (within 5px tolerance for floating point)
-      const isVillaTile = this.villaTriggered && 
-                          this.villaLoaded && 
+      const isVillaTile = this.villaTriggered &&
+                          this.villaLoaded &&
                           this.villaImage &&
                           Math.abs(x - villaX) < 5;
 
@@ -420,13 +436,31 @@ export class GameEngine {
   }
 
 
+  private drawCouple(): void {
+    if (!this.coupleImage) return;
+
+    // Scale couple to 1.5x the dog's height
+    const coupleHeight = this.dog.height * 1.5;
+    const aspectRatio = this.coupleImage.width / this.coupleImage.height;
+    const coupleWidth = coupleHeight * aspectRatio;
+
+    // Draw couple on the ground, bottom-aligned with the dog
+    const coupleY = this.groundY - coupleHeight;
+    this.ctx.drawImage(
+      this.coupleImage,
+      this.coupleX, coupleY,
+      coupleWidth, coupleHeight
+    );
+  }
+
   private drawUI(): void {
     const width = this.canvas.width;
-    const height = this.canvas.height;
+
+    // Only show score/HI when actively playing or arriving
+    if (this.gameState !== "playing" && this.gameState !== "arriving") return;
 
     // Scale font sizes based on canvas size
     const baseFontSize = Math.max(12, Math.min(24, width / 40));
-    const smallFontSize = Math.max(8, Math.min(14, width / 60));
     const tinyFontSize = Math.max(6, Math.min(10, width / 80));
 
     // Set font once at the beginning
@@ -443,44 +477,31 @@ export class GameEngine {
     this.ctx.fillStyle = COLORS.white;
     this.ctx.fillText(`HI ${Math.floor(this.highScore)}`, width - 20, 60);
 
-    // Game state messages
-    this.ctx.textAlign = "center";
-
-    if (this.gameState === "idle") {
-      this.ctx.fillStyle = COLORS.white;
-      this.ctx.font = `${Math.floor(baseFontSize * 1.5)}px ${pixelFont}`;
-      this.ctx.fillText("Run to Villa Bettoni!", width / 2, height / 2 - 40);
-      this.ctx.font = `${smallFontSize}px ${pixelFont}`;
-      this.ctx.fillText("Press SPACE or tap to start", width / 2, height / 2);
+    // Endless mode label
+    if (this.endless) {
       this.ctx.font = `${tinyFontSize}px ${pixelFont}`;
-      this.ctx.fillText("SPACE/UP = Jump | DOWN = Duck", width / 2, height / 2 + 30);
+      this.ctx.fillStyle = COLORS.orange;
+      this.ctx.textAlign = "right";
+      this.ctx.fillText("ENDLESS", width - 20, 80);
     }
 
-    if (this.gameState === "gameover") {
-      this.ctx.fillStyle = COLORS.white;
-      this.ctx.font = `${Math.floor(baseFontSize * 1.5)}px ${pixelFont}`;
-      this.ctx.fillText("GAME OVER", width / 2, height / 2 - 40);
-      this.ctx.font = `${smallFontSize}px ${pixelFont}`;
-      this.ctx.fillText(`Score: ${Math.floor(this.score)}`, width / 2, height / 2);
-      this.ctx.fillText("Press SPACE to retry", width / 2, height / 2 + 40);
-    }
-
-    if (this.gameState === "won") {
-      this.ctx.fillStyle = COLORS.white;
-      this.ctx.font = `${Math.floor(baseFontSize * 1.5)}px ${pixelFont}`;
-      this.ctx.fillText("YOU MADE IT!", width / 2, height / 2 - 60);
-      this.ctx.font = `${Math.floor(baseFontSize * 1.2)}px ${pixelFont}`;
-      this.ctx.fillText("Welcome to Villa Bettoni!", width / 2, height / 2 - 20);
-      this.ctx.font = `${smallFontSize}px ${pixelFont}`;
-      this.ctx.fillText(`Final Score: ${Math.floor(this.score)}`, width / 2, height / 2 + 20);
-      this.ctx.font = `${tinyFontSize}px ${pixelFont}`;
-      this.ctx.fillText("Press SPACE to play again", width / 2, height / 2 + 50);
-    }
+    // Debug stats (speed + spawn interval)
+    this.ctx.font = `${tinyFontSize}px ${pixelFont}`;
+    this.ctx.fillStyle = COLORS.white;
+    this.ctx.textAlign = "left";
+    this.ctx.fillText(`SPD ${this.currentSpeed.toFixed(1)}`, 20, 40);
+    this.ctx.fillText(`INT ${Math.floor(this.currentSpawnInterval)}ms`, 20, 60);
   }
 
   private gameLoop = (timestamp: number): void => {
-    const deltaTime = timestamp - this.lastTime;
+    const rawDelta = timestamp - this.lastTime;
     this.lastTime = timestamp;
+
+    // Clamp deltaTime to prevent huge jumps when the browser tab loses
+    // focus, GC runs, or React re-renders cause a delayed frame.
+    // Max ~3 frames at 60 FPS (50ms). Without this cap the background
+    // scrolls a large distance in a single frame, causing a visible jump.
+    const deltaTime = Math.min(rawDelta, 50);
 
     this.update(deltaTime);
     this.draw();
@@ -503,9 +524,7 @@ export class GameEngine {
   public destroy(): void {
     this.stop();
     window.removeEventListener("keydown", this.handleKeyDown);
-    window.removeEventListener("keyup", this.handleKeyUp);
     this.canvas.removeEventListener("touchstart", this.handleTouchStart);
-    this.canvas.removeEventListener("touchend", this.handleTouchEnd);
   }
 
   public resize(width: number, height: number): void {
@@ -514,9 +533,12 @@ export class GameEngine {
     this.canvas.height = height;
     this.canvas.style.width = `${width}px`;
     this.canvas.style.height = `${height}px`;
-    
-    // Update dog and follower scale
-    this.dog.updateScale(width, this.groundY);
-    this.follower.updateScale(this.groundY);
+
+    // Recalculate mobile detection
+    this.isMobile = width < 600;
+    const startX = this.isMobile ? GAME_CONFIG.mobile.startX : GAME_CONFIG.dog.startX;
+
+    // Update dog scale and position
+    this.dog.updateScale(width, this.groundY, startX);
   }
 }

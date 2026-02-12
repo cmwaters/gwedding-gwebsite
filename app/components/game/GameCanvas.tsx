@@ -1,87 +1,127 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from "react";
 import { GameEngine } from "./GameEngine";
-import { GAME_CONFIG } from "./constants";
 
-export default function GameCanvas() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const gameRef = useRef<GameEngine | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+export interface GameCanvasHandle {
+  startGame: () => void;
+  startEndless: () => void;
+  returnToIdle: () => void;
+}
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const container = containerRef.current;
-    if (!canvas || !container) return;
+interface GameCanvasProps {
+  onGameEnd?: (result: "gameover" | "won", score: number) => void;
+}
 
-    // Preload font before starting game
-    const preloadFont = async () => {
-      try {
-        await document.fonts.load('12px "Press Start 2P"');
-        console.log('Font loaded successfully');
-      } catch (error) {
-        console.warn('Font loading failed, continuing anyway:', error);
-      }
-    };
+const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(
+  function GameCanvas({ onGameEnd }, ref) {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const gameRef = useRef<GameEngine | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [isLoaded, setIsLoaded] = useState(false);
 
-    const initGame = async () => {
-      await preloadFont();
+    // Expose startGame and returnToIdle to parent via ref
+    useImperativeHandle(ref, () => ({
+      startGame: () => {
+        gameRef.current?.startGame("normal");
+      },
+      startEndless: () => {
+        gameRef.current?.startGame("endless");
+      },
+      returnToIdle: () => {
+        gameRef.current?.returnToIdle();
+      },
+    }));
 
-      // Get initial container size
-      const { width, height } = container.getBoundingClientRect();
-      
-      // Initialize canvas size to container size
-      canvas.width = width;
-      canvas.height = height;
+    useEffect(() => {
+      const canvas = canvasRef.current;
+      const container = containerRef.current;
+      if (!canvas || !container) return;
 
-      // Create game engine
-      gameRef.current = new GameEngine(canvas);
-
-      // Handle resize
-      const handleResize = () => {
-        if (gameRef.current && container) {
-          const { width, height } = container.getBoundingClientRect();
-          gameRef.current.resize(width, height);
+      // Preload font before starting game
+      const preloadFont = async () => {
+        try {
+          await document.fonts.load('12px "Press Start 2P"');
+          console.log("Font loaded successfully");
+        } catch (error) {
+          console.warn("Font loading failed, continuing anyway:", error);
         }
       };
 
-      // Initial resize (in case size changed)
-      handleResize();
-      window.addEventListener("resize", handleResize);
+      const initGame = async () => {
+        await preloadFont();
 
-      // Start game loop
-      gameRef.current.start();
-      setIsLoaded(true);
-    };
+        // Get initial container size
+        const { width, height } = container.getBoundingClientRect();
 
-    initGame();
+        // Initialize canvas size to container size
+        canvas.width = width;
+        canvas.height = height;
 
-    return () => {
-      window.removeEventListener("resize", () => {});
+        // Create game engine
+        const engine = new GameEngine(canvas);
+        gameRef.current = engine;
+
+        // Handle resize
+        const handleResize = () => {
+          if (gameRef.current && container) {
+            const { width, height } = container.getBoundingClientRect();
+            gameRef.current.resize(width, height);
+          }
+        };
+
+        // Initial resize (in case size changed)
+        handleResize();
+        window.addEventListener("resize", handleResize);
+
+        // Wire up callback before starting
+        engine.onGameEnd = onGameEnd ?? null;
+
+        // Start game loop (renders idle state — background + dog)
+        engine.start();
+        setIsLoaded(true);
+
+        // Store handleResize for cleanup
+        (container as unknown as Record<string, () => void>).__handleResize = handleResize;
+      };
+
+      initGame();
+
+      return () => {
+        const storedResize = (container as unknown as Record<string, () => void>).__handleResize;
+        if (storedResize) {
+          window.removeEventListener("resize", storedResize);
+        }
+        if (gameRef.current) {
+          gameRef.current.destroy();
+        }
+      };
+    }, []);
+
+    // Wire up onGameEnd callback whenever it changes
+    useEffect(() => {
       if (gameRef.current) {
-        gameRef.current.destroy();
+        gameRef.current.onGameEnd = onGameEnd ?? null;
       }
-    };
-  }, []);
+    }, [onGameEnd]);
 
-  return (
-    <div
-      ref={containerRef}
-      className="w-full h-full bg-sky-blue"
-    >
-      <canvas
-        ref={canvasRef}
-        className={`
-          w-full h-full
-          transition-opacity duration-300
-          ${isLoaded ? "opacity-100" : "opacity-0"}
-        `}
-        style={{
-          imageRendering: "pixelated",
-          touchAction: "none",
-        }}
-      />
-    </div>
-  );
-}
+    return (
+      <div ref={containerRef} className="w-full h-full bg-sky-blue">
+        <canvas
+          ref={canvasRef}
+          className={`
+            w-full h-full
+            transition-opacity duration-300
+            ${isLoaded ? "opacity-100" : "opacity-0"}
+          `}
+          style={{
+            imageRendering: "pixelated",
+            touchAction: "none",
+          }}
+        />
+      </div>
+    );
+  }
+);
+
+export default GameCanvas;

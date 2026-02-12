@@ -8,56 +8,58 @@ export class Dog {
   private animationFrame: number;
   private animationTimer: number;
   private groundY: number;
-  
+  private startX: number;
+
   // Sprite
   private sprite: HTMLImageElement | null = null;
   private spriteLoaded: boolean = false;
-  
-  // Sprite dimensions (64x256 total, four 64x64 frames stacked vertically)
-  // Frame 0: Running 1, Frame 1: Running 2, Frame 2: Jumping, Frame 3: Ducking
-  private readonly frameWidth: number = 64;
-  private readonly frameHeight: number = 64;
+
+  // Sprite dimensions (310x960 total, four 310x240 frames stacked vertically)
+  // Frame 0-2: Running, Frame 3: Jumping
+  private readonly frameWidth: number = 310;
+  private readonly frameHeight: number = 240;
 
   constructor(canvasWidth: number = GAME_CONFIG.canvas.width, groundY: number = GAME_CONFIG.physics.groundY) {
     this.groundY = groundY;
-    
+    this.startX = GAME_CONFIG.dog.startX;
+
     this.position = {
-      x: GAME_CONFIG.dog.startX,
+      x: this.startX,
       y: this.groundY - GAME_CONFIG.dog.height,
     };
     this.velocity = { vx: 0, vy: 0 };
     this.state = "running";
     this.animationFrame = 0;
     this.animationTimer = 0;
-    
+
     // Load sprite
     this.loadSprite();
   }
-  
+
   private loadSprite(): void {
     this.sprite = new Image();
     this.sprite.onload = () => {
       this.spriteLoaded = true;
     };
-    this.sprite.src = "/viz_running.png";
+    this.sprite.src = "/viszla.png";
   }
 
-  updateScale(canvasWidth: number, groundY: number): void {
+  updateScale(canvasWidth: number, groundY: number, startX?: number): void {
     this.groundY = groundY;
+    if (startX !== undefined) {
+      this.startX = startX;
+      this.position.x = startX;
+    }
     // Keep position consistent
     this.position.y = this.groundY - this.height;
   }
 
   get width(): number {
-    return this.state === "ducking"
-      ? GAME_CONFIG.dog.duckWidth
-      : GAME_CONFIG.dog.width;
+    return GAME_CONFIG.dog.width;
   }
 
   get height(): number {
-    return this.state === "ducking"
-      ? GAME_CONFIG.dog.duckHeight
-      : GAME_CONFIG.dog.height;
+    return GAME_CONFIG.dog.height;
   }
 
   get isOnGround(): boolean {
@@ -80,23 +82,6 @@ export class Dog {
     }
   }
 
-  duck(isDucking: boolean): void {
-    if (isDucking) {
-      if (this.state === "jumping") {
-        // Fast fall when ducking in air
-        this.velocity.vy = Math.max(this.velocity.vy, 8);
-      } else if (this.isOnGround) {
-        this.state = "ducking";
-        // Adjust Y position so dog stays on ground when ducking
-        this.position.y = this.groundY - this.height;
-      }
-    } else if (this.state === "ducking" && this.isOnGround) {
-      this.state = "running";
-      // Adjust Y position back when standing
-      this.position.y = this.groundY - this.height;
-    }
-  }
-
   update(deltaTime: number, normalizedDelta: number = 1): void {
     // Apply gravity
     this.velocity.vy += GAME_CONFIG.physics.gravity * normalizedDelta;
@@ -114,10 +99,10 @@ export class Dog {
       }
     }
 
-    // Update animation
+    // Update animation (cycle through 3 running frames)
     this.animationTimer += deltaTime;
     if (this.animationTimer > 100) {
-      this.animationFrame = (this.animationFrame + 1) % 2;
+      this.animationFrame = (this.animationFrame + 1) % 3;
       this.animationTimer = 0;
     }
   }
@@ -129,29 +114,25 @@ export class Dog {
       ctx.fillRect(this.position.x, this.position.y, this.width, this.height);
       return;
     }
-    
+
     // Determine which frame to use based on state
     let frameIndex: number;
     switch (this.state) {
       case "running":
-        // Alternate between frames 0 and 1
+        // Cycle through frames 0, 1, 2
         frameIndex = this.animationFrame;
         break;
       case "jumping":
-        // Frame 2 for jumping
-        frameIndex = 2;
-        break;
-      case "ducking":
-        // Frame 3 for ducking
+        // Frame 3 for jumping
         frameIndex = 3;
         break;
       default:
         frameIndex = 0;
     }
-    
+
     // Source Y position based on frame index
     const sourceY = frameIndex * this.frameHeight;
-    
+
     // Draw the sprite scaled to the dog's dimensions
     ctx.drawImage(
       this.sprite,
@@ -162,7 +143,7 @@ export class Dog {
 
   reset(): void {
     this.position = {
-      x: GAME_CONFIG.dog.startX,
+      x: this.startX,
       y: this.groundY - GAME_CONFIG.dog.height,
     };
     this.velocity = { vx: 0, vy: 0 };

@@ -5,8 +5,8 @@ import { Hitbox } from "../types";
  * Returns true if two hitboxes are overlapping
  */
 export function checkCollision(a: Hitbox, b: Hitbox): boolean {
-  // Add small padding for "fair" feeling (makes hitboxes slightly smaller)
-  const padding = 4;
+  // Generous padding so collisions feel fair — shrinks hitboxes inward
+  const padding = 12;
 
   const aLeft = a.x + padding;
   const aRight = a.x + a.width - padding;

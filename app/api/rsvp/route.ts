@@ -45,7 +45,6 @@ export async function POST(request: NextRequest) {
           is_attending: guest.is_attending,
           email: body.email,
           comments: body.comments || null,
-          has_responded: true,
           updated_at: new Date().toISOString(),
         })
         .eq("invite_code", guest.invite_code);

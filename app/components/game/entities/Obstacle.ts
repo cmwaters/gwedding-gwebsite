@@ -29,7 +29,7 @@ export class Obstacle {
   private rotation: number; // Ball spin
   private sprite: HTMLImageElement;
 
-  constructor(type: ObstacleType, speed: number, canvasWidth: number, groundY: number) {
+  constructor(type: ObstacleType, speed: number, canvasWidth: number, groundY: number, dogX: number) {
     this.type = type;
     this.speed = speed;
     this.canvasWidth = canvasWidth;
@@ -45,12 +45,32 @@ export class Obstacle {
     this.peakHeight = config.peakHeight;
     this.bounceCount = config.bounceCount;
 
-    // Start at right edge of screen
-    // Offset low arc balls by half a bounce so they hit peak height
-    // when crossing the dog's position instead of being at ground level
+    // Calculate phase offset so a bounce peak aligns with the dog's X position.
+    // The ball spawns at x = canvasWidth and travels left. When it reaches dogX
+    // it will have traveled (canvasWidth - dogX) pixels.
+    //
+    // bounce = |sin(distanceTraveled * frequency)|
+    // frequency = (bounceCount * PI) / totalTravel
+    // Peaks of |sin| occur at PI/2 + n*PI.
+    //
+    // For low arcs (peakHeight 50): ball rolls along the ground at the dog
+    //   → trough at dog position, the dog must jump over it.
+    // For high arcs (peakHeight 150): ball is at peak height over the dog
+    //   → peak at dog position, safe if you stay on the ground, hit if you jump.
     const totalTravel = canvasWidth + 100;
-    const halfBounce = totalTravel / (this.bounceCount * 2);
-    this.distanceTraveled = type === "low" ? halfBounce : 0;
+    const frequency = (this.bounceCount * Math.PI) / totalTravel;
+    const distAtDog = canvasWidth - dogX;
+    const period = Math.PI / frequency; // half-period of |sin|
+
+    if (type === "low") {
+      // Put a trough (ground level) at the dog position
+      const rawOffset = -distAtDog;
+      this.distanceTraveled = ((rawOffset % period) + period) % period;
+    } else {
+      // High arc: put a peak (max height) at the dog position
+      const rawOffset = (Math.PI / 2) / frequency - distAtDog;
+      this.distanceTraveled = ((rawOffset % period) + period) % period;
+    }
 
     this.position = {
       x: canvasWidth,

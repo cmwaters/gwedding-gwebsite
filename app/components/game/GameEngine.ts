@@ -235,7 +235,8 @@ export class GameEngine {
   private spawnObstacle(): void {
     // Random type selection, 50/50 split between low and high arc balls
     const type: ObstacleType = Math.random() > 0.5 ? "low" : "high";
-    this.obstacles.push(new Obstacle(type, this.currentSpeed, this.canvas.width, this.groundY));
+    const dogCenterX = this.dog.position.x + this.dog.width / 2;
+    this.obstacles.push(new Obstacle(type, this.currentSpeed, this.canvas.width, this.groundY, dogCenterX));
   }
 
   private update(deltaTime: number): void {

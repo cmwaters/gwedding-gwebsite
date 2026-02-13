@@ -10,7 +10,7 @@ export const translations = {
     en: "19-20 September 2026",
     es: "19-20 Septiembre 2026",
   },
-  menuStart: { en: "Start", es: "Jugar" },
+  menuStart: { en: "Play", es: "Jugar" },
   menuSchedule: { en: "Schedule", es: "Programa" },
   menuTravelStay: { en: "Travel & Stay", es: "Viaje y Alojamiento" },
   menuRsvp: { en: "RSVP", es: "Confirmar" },
@@ -43,6 +43,9 @@ export const translations = {
     en: "Press SPACE or tap to start!",
     es: "Pulsa ESPACIO o toca para empezar!",
   },
+
+  // ── Game Submenu ──
+  start: { en: "Start", es: "Iniciar" },
 
   // ── Game Result ──
   youMadeIt: { en: "YOU MADE IT!", es: "LO LOGRASTE!" },
@@ -166,6 +169,10 @@ export const translations = {
   photo: { en: "PHOTO", es: "FOTO" },
 
   // ── RSVP ──
+  rsvpJoiningUs: {
+    en: "will you be joining us?",
+    es: "nos acompanaras?",
+  },
   rsvpReceived: { en: "RSVP RECEIVED!", es: "CONFIRMACION RECIBIDA!" },
   seeYouAt: { en: "See you at", es: "Nos vemos en" },
   wellMissYou: {
@@ -222,6 +229,26 @@ export const translations = {
     es: "Mensaje opcional...",
   },
   sendRsvp: { en: "SEND RSVP", es: "ENVIAR CONFIRMACION" },
+
+  // ── Leaderboard ──
+  menuLeaderboard: { en: "Leaderboard", es: "Tabla de Posiciones" },
+  panelLeaderboard: { en: "Leaderboard", es: "Tabla de Posiciones" },
+  leaderboardRank: { en: "#", es: "#" },
+  leaderboardName: { en: "NAME", es: "NOMBRE" },
+  leaderboardScore: { en: "SCORE", es: "PUNTOS" },
+  leaderboardEmpty: {
+    en: "No scores yet. Be the first!",
+    es: "Sin puntos aun. Se el primero!",
+  },
+  leaderboardLoading: { en: "Loading...", es: "Cargando..." },
+  leaderboardError: {
+    en: "Could not load leaderboard",
+    es: "No se pudo cargar la tabla",
+  },
+  leaderboardYou: { en: "(you)", es: "(tu)" },
+
+  // ── Score Submitted ──
+  scoreSubmitted: { en: "Score submitted!", es: "Puntos enviados!" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

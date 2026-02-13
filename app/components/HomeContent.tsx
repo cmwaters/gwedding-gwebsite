@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Screen } from "../config";
 import { useLanguage } from "../i18n";
+import { useGuests } from "../context/GuestContext";
+import { aggregateGuestNames } from "../lib/guestUtils";
 import RetroMenu from "./menu/RetroMenu";
-import InstructionsOverlay from "./menu/InstructionsOverlay";
-import GameResultOverlay from "./menu/GameResultOverlay";
+import GameSubmenu, { GameResult } from "./menu/GameSubmenu";
 import GameCanvas, { GameCanvasHandle } from "./game/GameCanvas";
 import RetroPanel from "./menu/RetroPanel";
 import SchedulePanel from "./menu/panels/SchedulePanel";
@@ -16,10 +17,17 @@ import GalleryPanel from "./menu/panels/GalleryPanel";
 
 export default function HomeContent() {
   const { t } = useLanguage();
+  const guestGroup = useGuests();
   const [screen, setScreen] = useState<Screen>("menu");
-  const [lastScore, setLastScore] = useState(0);
-  const [isEndless, setIsEndless] = useState(false);
+  const [gameResult, setGameResult] = useState<GameResult | null>(null);
+  const isEndlessRef = useRef(false);
   const gameRef = useRef<GameCanvasHandle>(null);
+
+  // Aggregated group name for leaderboard (null for anonymous visitors)
+  const groupName = useMemo(
+    () => (guestGroup ? aggregateGuestNames(guestGroup.guests) : null),
+    [guestGroup]
+  );
 
   const panelConfig: Record<string, { title: string; content: React.ReactNode }> = {
     schedule: { title: t("panelSchedule"), content: <SchedulePanel /> },
@@ -31,41 +39,56 @@ export default function HomeContent() {
 
   const handleGameEnd = useCallback(
     (result: "gameover" | "won", score: number) => {
-      setLastScore(score);
-      setScreen(result);
+      const submitted = groupName !== null && score > 0;
+
+      // Submit score to leaderboard (fire-and-forget)
+      if (submitted) {
+        fetch("/api/leaderboard", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: groupName, score }),
+        }).catch((err) => console.error("Score submit failed:", err));
+      }
+
+      setGameResult({
+        type: result,
+        score,
+        wasEndless: isEndlessRef.current,
+        scoreSubmitted: submitted,
+      });
+      setScreen("game-submenu");
     },
-    []
+    [groupName]
   );
 
   const handleMenuSelect = useCallback((selected: Screen) => {
     setScreen(selected);
   }, []);
 
-  const handleStartPlaying = useCallback(() => {
-    setScreen("playing");
-  }, []);
-
-  const handleRestart = useCallback(() => {
-    setIsEndless(false);
+  const handleStartNormal = useCallback(() => {
+    isEndlessRef.current = false;
+    setGameResult(null);
     gameRef.current?.startGame();
     setScreen("playing");
   }, []);
 
   const handleStartEndless = useCallback(() => {
-    setIsEndless(true);
+    isEndlessRef.current = true;
+    setGameResult(null);
     gameRef.current?.startEndless();
     setScreen("playing");
   }, []);
 
   const handleBackToMenu = useCallback(() => {
-    setIsEndless(false);
+    isEndlessRef.current = false;
+    setGameResult(null);
     gameRef.current?.returnToIdle();
     setScreen("menu");
   }, []);
 
-  // ESC key — return to menu from any overlay (but not while playing)
+  // ESC key — return to menu from content panels (not playing or game-submenu)
   useEffect(() => {
-    if (screen === "playing" || screen === "menu") return;
+    if (screen === "playing" || screen === "menu" || screen === "game-submenu") return;
 
     const handleBack = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
@@ -73,10 +96,6 @@ export default function HomeContent() {
 
       if (e.code === "Escape" || e.code === "Backspace") {
         e.preventDefault();
-        if (screen === "gameover" || screen === "won") {
-          setIsEndless(false);
-          gameRef.current?.returnToIdle();
-        }
         setScreen("menu");
       }
     };
@@ -86,7 +105,6 @@ export default function HomeContent() {
   }, [screen]);
 
   const panel = panelConfig[screen] ?? null;
-  const isGameResult = screen === "gameover" || screen === "won";
 
   return (
     <main className="h-screen w-screen overflow-hidden relative">
@@ -102,20 +120,13 @@ export default function HomeContent() {
         </div>
       )}
 
-      {/* Instructions */}
-      {screen === "instructions" && (
-        <InstructionsOverlay gameRef={gameRef} onStart={handleStartPlaying} />
-      )}
-
-      {/* Game Over / Won */}
-      {isGameResult && (
-        <GameResultOverlay
-          result={screen as "gameover" | "won"}
-          score={lastScore}
-          isEndless={isEndless}
-          onRestart={handleRestart}
+      {/* Game Submenu (pre-game instructions + post-game results) */}
+      {screen === "game-submenu" && (
+        <GameSubmenu
+          gameResult={gameResult}
+          onStartNormal={handleStartNormal}
+          onStartEndless={handleStartEndless}
           onMenu={handleBackToMenu}
-          onEndless={handleStartEndless}
         />
       )}
 

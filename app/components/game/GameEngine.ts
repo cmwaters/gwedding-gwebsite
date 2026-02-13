@@ -30,10 +30,21 @@ export class GameEngine {
   private currentSpawnInterval: number; // Current max spawn interval
   private doubleSpawnTimer: number = 0; // Countdown for delayed second ball
 
+  // FPS tracking
+  private fps: number = 60;
+  private frameCount: number = 0;
+  private fpsLastTime: number = 0;
+
   // Background scrolling
   private backgroundImage: HTMLImageElement | null = null;
   private backgroundLoaded: boolean = false;
   private backgroundX: number = 0;
+
+  // Pre-scaled offscreen canvases (avoid re-scaling large images every frame)
+  private bgScaled: HTMLCanvasElement | null = null;
+  private villaScaled: HTMLCanvasElement | null = null;
+  private scaledTileW: number = 0;
+  private scaledTileH: number = 0;
 
   // Villa (finish line)
   private villaImage: HTMLImageElement | null = null;
@@ -93,6 +104,7 @@ export class GameEngine {
     this.backgroundImage = new Image();
     this.backgroundImage.onload = () => {
       this.backgroundLoaded = true;
+      this.buildScaledTile(this.backgroundImage!, "bg");
     };
     this.backgroundImage.src = "/background.png";
 
@@ -100,6 +112,7 @@ export class GameEngine {
     this.villaImage = new Image();
     this.villaImage.onload = () => {
       this.villaLoaded = true;
+      this.buildScaledTile(this.villaImage!, "villa");
     };
     this.villaImage.src = "/villa.png";
 
@@ -109,6 +122,30 @@ export class GameEngine {
       this.coupleLoaded = true;
     };
     this.coupleImage.src = "/cal_and_euge.png";
+  }
+
+  /** Pre-render an image at the fixed 0.5x scale into an offscreen canvas.
+   *  This turns every per-frame drawImage from a scale-and-blit into a
+   *  simple 1:1 blit, which is dramatically faster on most GPUs / CPUs. */
+  private buildScaledTile(img: HTMLImageElement, target: "bg" | "villa"): void {
+    const fixedScale = 0.5;
+    const w = Math.ceil(img.width * fixedScale);
+    const h = Math.ceil(img.height * fixedScale);
+    this.scaledTileW = w;
+    this.scaledTileH = h;
+
+    const offscreen = document.createElement("canvas");
+    offscreen.width = w;
+    offscreen.height = h;
+    const octx = offscreen.getContext("2d")!;
+    octx.imageSmoothingEnabled = false; // keep pixelated look
+    octx.drawImage(img, 0, 0, w, h);
+
+    if (target === "bg") {
+      this.bgScaled = offscreen;
+    } else {
+      this.villaScaled = offscreen;
+    }
   }
 
   private loadHighScore(): number {
@@ -230,10 +267,9 @@ export class GameEngine {
     this.dog.update(deltaTime, normalizedDelta);
 
     // Trigger villa background when approaching finish score (skip in endless mode)
-    if (!this.endless && !this.villaTriggered && this.score >= GAME_CONFIG.scoring.finishScore - 50 && this.backgroundImage) {
+    if (!this.endless && !this.villaTriggered && this.score >= GAME_CONFIG.scoring.finishScore - 50 && this.scaledTileW > 0) {
       this.villaTriggered = true;
-      // Calculate tile width
-      const scaledWidth = this.backgroundImage.width * 0.5;
+      const scaledWidth = this.scaledTileW;
       // Find the next tile position that's just past the right edge of screen
       const wrappedX = this.backgroundX % scaledWidth;
       let x = wrappedX;
@@ -248,15 +284,15 @@ export class GameEngine {
     }
 
     // Update couple position to scroll with the villa
-    if (this.villaTriggered && this.backgroundImage) {
+    if (this.villaTriggered && this.scaledTileW > 0) {
       const villaX = this.backgroundX + this.villaTileOffset;
       this.coupleX = villaX + this.coupleOffsetFromVilla;
     }
 
     // Check if villa center is at screen center (win condition — skip in endless mode)
     // Enter "arriving" state instead of immediately ending
-    if (!this.endless && this.villaTriggered && this.backgroundImage) {
-      const scaledWidth = this.backgroundImage.width * 0.5;
+    if (!this.endless && this.villaTriggered && this.scaledTileW > 0) {
+      const scaledWidth = this.scaledTileW;
       const villaX = this.backgroundX + this.villaTileOffset;
       const villaCenterX = villaX + scaledWidth / 2;
       const screenCenterX = this.canvas.width / 2;
@@ -360,7 +396,7 @@ export class GameEngine {
     this.ctx.fillRect(0, 0, width, height);
 
     // Draw scrolling background
-    if (this.backgroundLoaded && this.backgroundImage) {
+    if (this.bgScaled) {
       this.drawScrollingBackground(width, height);
     }
 
@@ -382,16 +418,10 @@ export class GameEngine {
   }
 
   private drawScrollingBackground(width: number, height: number): void {
-    if (!this.backgroundImage) return;
+    if (!this.bgScaled) return;
 
-    const imgWidth = this.backgroundImage.width;
-    const imgHeight = this.backgroundImage.height;
-
-    // Use a fixed scale - background stays same size relative to dog
-    // Draw at native size (or a fixed multiplier)
-    const fixedScale = 0.5; // Adjust this if background is too big/small
-    const scaledWidth = imgWidth * fixedScale;
-    const scaledHeight = imgHeight * fixedScale;
+    const scaledWidth = this.scaledTileW;
+    const scaledHeight = this.scaledTileH;
 
     // Position background so bottom aligns with bottom of canvas
     // This crops the sky when window is smaller
@@ -408,29 +438,16 @@ export class GameEngine {
     const villaX = this.villaTriggered ? this.backgroundX + this.villaTileOffset : -99999;
 
     // Draw tiles to cover the entire canvas width
-    // If villa is triggered, replace one tile with villa.png
+    // Using pre-scaled offscreen canvases — 1:1 blit, no per-frame scaling
     while (x < width + scaledWidth) {
       // Check if this tile position should be the villa (within 5px tolerance for floating point)
       const isVillaTile = this.villaTriggered &&
-                          this.villaLoaded &&
-                          this.villaImage &&
+                          this.villaScaled &&
                           Math.abs(x - villaX) < 5;
 
-      if (isVillaTile && this.villaImage) {
-        // Draw villa instead of background
-        this.ctx.drawImage(
-          this.villaImage,
-          Math.floor(x), yOffset,
-          Math.ceil(scaledWidth) + 1, scaledHeight
-        );
-      } else {
-        // Draw normal background tile
-        this.ctx.drawImage(
-          this.backgroundImage,
-          Math.floor(x), yOffset,
-          Math.ceil(scaledWidth) + 1, scaledHeight
-        );
-      }
+      const tile = isVillaTile ? this.villaScaled! : this.bgScaled;
+      this.ctx.drawImage(tile, Math.floor(x), yOffset);
+
       x += scaledWidth;
     }
   }
@@ -485,12 +502,13 @@ export class GameEngine {
       this.ctx.fillText("ENDLESS", width - 20, 80);
     }
 
-    // Debug stats (speed + spawn interval)
-    this.ctx.font = `${tinyFontSize}px ${pixelFont}`;
-    this.ctx.fillStyle = COLORS.white;
-    this.ctx.textAlign = "left";
-    this.ctx.fillText(`SPD ${this.currentSpeed.toFixed(1)}`, 20, 40);
-    this.ctx.fillText(`INT ${Math.floor(this.currentSpawnInterval)}ms`, 20, 60);
+    // FPS warning (only shown when below 60)
+    if (this.fps > 0 && this.fps < 60) {
+      this.ctx.font = `${tinyFontSize}px ${pixelFont}`;
+      this.ctx.fillStyle = COLORS.orange;
+      this.ctx.textAlign = "left";
+      this.ctx.fillText(`FPS ${this.fps}`, 20, 40);
+    }
   }
 
   private gameLoop = (timestamp: number): void => {
@@ -502,6 +520,14 @@ export class GameEngine {
     // Max ~3 frames at 60 FPS (50ms). Without this cap the background
     // scrolls a large distance in a single frame, causing a visible jump.
     const deltaTime = Math.min(rawDelta, 50);
+
+    // FPS counter (update once per second)
+    this.frameCount++;
+    if (timestamp - this.fpsLastTime >= 1000) {
+      this.fps = this.frameCount;
+      this.frameCount = 0;
+      this.fpsLastTime = timestamp;
+    }
 
     this.update(deltaTime);
     this.draw();

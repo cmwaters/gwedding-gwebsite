@@ -17,27 +17,32 @@ interface MenuEntry {
   locked?: boolean;
 }
 
-const MENU_ITEMS: MenuEntry[] = [
-  { labelKey: "menuStart", screen: "instructions" },
+const BASE_MENU_ITEMS: MenuEntry[] = [
+  { labelKey: "menuStart", screen: "game-submenu" },
   { labelKey: "menuSchedule", screen: "schedule" },
   { labelKey: "menuTravelStay", screen: "travel" },
   { labelKey: "menuInfo", screen: "info" },
   { labelKey: "menuGallery", screen: "gallery", locked: !SITE_CONFIG.galleryUnlocked },
-  { labelKey: "menuRsvp", screen: "rsvp" },
 ];
+
+const RSVP_ITEM: MenuEntry = { labelKey: "menuRsvp", screen: "rsvp" };
 
 export default function RetroMenu({ onSelect }: RetroMenuProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const { language, setLanguage, t } = useLanguage();
   const guestGroup = useGuests();
 
+  // Only show RSVP when user has an invite code (guestGroup is not null)
+  const showRsvp = guestGroup !== null;
+  const menuItems = showRsvp ? [...BASE_MENU_ITEMS, RSVP_ITEM] : BASE_MENU_ITEMS;
+
   const handleSelect = useCallback(
     (index: number) => {
-      const item = MENU_ITEMS[index];
+      const item = menuItems[index];
       if (item.locked) return;
       onSelect(item.screen);
     },
-    [onSelect]
+    [onSelect, menuItems]
   );
 
   useEffect(() => {
@@ -49,13 +54,13 @@ export default function RetroMenu({ onSelect }: RetroMenuProps) {
         case "ArrowUp":
           e.preventDefault();
           setSelectedIndex((prev) =>
-            prev <= 0 ? MENU_ITEMS.length - 1 : prev - 1
+            prev <= 0 ? menuItems.length - 1 : prev - 1
           );
           break;
         case "ArrowDown":
           e.preventDefault();
           setSelectedIndex((prev) =>
-            prev >= MENU_ITEMS.length - 1 ? 0 : prev + 1
+            prev >= menuItems.length - 1 ? 0 : prev + 1
           );
           break;
         case "Enter":
@@ -68,7 +73,7 @@ export default function RetroMenu({ onSelect }: RetroMenuProps) {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedIndex, handleSelect]);
+  }, [selectedIndex, handleSelect, menuItems]);
 
   return (
     <div className="w-full h-full bg-cornflower/70 flex flex-col items-center justify-center p-6 sm:p-8 animate-fade-in relative">
@@ -134,7 +139,7 @@ export default function RetroMenu({ onSelect }: RetroMenuProps) {
 
       {/* Menu items */}
       <nav className="w-full max-w-sm">
-        {MENU_ITEMS.slice(0, -1).map((item, index) => {
+        {BASE_MENU_ITEMS.map((item, index) => {
           return (
             <MenuItem
               key={item.screen}
@@ -150,11 +155,10 @@ export default function RetroMenu({ onSelect }: RetroMenuProps) {
         })}
       </nav>
 
-      {/* RSVP button — separated with white border */}
-      {(() => {
-        const rsvpIndex = MENU_ITEMS.length - 1;
-        const rsvpItem = MENU_ITEMS[rsvpIndex];
-        let rsvpLabel = t(rsvpItem.labelKey);
+      {/* RSVP button — only shown for authorised guests, separated with white border */}
+      {showRsvp && (() => {
+        const rsvpIndex = menuItems.length - 1;
+        let rsvpLabel = t(RSVP_ITEM.labelKey);
         if (guestGroup?.rsvpByDate) {
           rsvpLabel = `${rsvpLabel} (${t("rsvpByPrefix")} ${guestGroup.rsvpByDate})`;
         }

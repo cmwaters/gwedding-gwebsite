@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useLanguage } from "@/app/i18n";
 import { useGuests } from "@/app/context/GuestContext";
+import { aggregateGuestNames } from "@/app/lib/guestUtils";
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
 
@@ -26,6 +27,7 @@ function RsvpForm() {
   const { t } = useLanguage();
   const guestGroup = useGuests()!;
   const { guests } = guestGroup;
+  const groupName = useMemo(() => aggregateGuestNames(guests), [guests]);
 
   // Per-guest attendance: invite_code → boolean | null
   const [attendance, setAttendance] = useState<Record<string, boolean | null>>(() => {
@@ -112,7 +114,7 @@ function RsvpForm() {
         {guests.map((guest) => (
           <div key={guest.invite_code}>
             <label className="block text-xs sm:text-sm mb-2 text-amber">
-              {guest.name}
+              {guest.name}, {t("rsvpJoiningUs")}
             </label>
             <div className="flex gap-3">
               <button

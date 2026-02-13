@@ -6,10 +6,8 @@ export const SITE_CONFIG = {
 
 export type Screen =
   | "menu"
-  | "instructions"
+  | "game-submenu"
   | "playing"
-  | "gameover"
-  | "won"
   | "schedule"
   | "travel"
   | "rsvp"

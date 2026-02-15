@@ -6,7 +6,7 @@ import type { Guest } from "./database.types";
  */
 export function extractPlusOnes(comments: string | null): string {
   if (!comments?.trim()) return "";
-  const match = comments.match(/Plus-one request: (.+)/s);
+  const match = comments.match(/Plus-one request: ([\s\S]+)/);
   return match ? match[1].trim() : "";
 }
 

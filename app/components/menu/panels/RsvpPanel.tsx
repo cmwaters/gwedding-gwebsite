@@ -42,11 +42,11 @@ function RsvpForm() {
   const [email, setEmail] = useState(guests[0]?.email ?? "");
   const [comments, setComments] = useState(() => {
     const c = guests[0]?.comments ?? "";
-    return c.replace(/\n\nPlus-one request: .+/s, "").trim();
+    return c.replace(/\n\nPlus-one request: [\s\S]+/, "").trim();
   });
   const [plusOneNames, setPlusOneNames] = useState(() => {
     const c = guests[0]?.comments ?? "";
-    const match = c.match(/Plus-one request: (.+)/s);
+    const match = c.match(/Plus-one request: ([\s\S]+)/);
     return match ? match[1].trim() : "";
   });
   const [submitState, setSubmitState] = useState<SubmitState>("idle");

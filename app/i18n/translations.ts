@@ -66,8 +66,8 @@ export const translations = {
     es: "¡Luke recorrió el {pct}% del camino a Villa Bettoni!",
   },
   avoidBallsHint: {
-    en: "Tip: Jump over the soccer balls!",
-    es: "¡Consejo: Salta sobre los balones!",
+    en: "Tip: Avoid the soccer balls!",
+    es: "¡Consejo: Evita los balones!",
   },
   score: { en: "Score", es: "Puntos" },
   retry: { en: "Retry", es: "Reintentar" },
@@ -228,18 +228,6 @@ export const translations = {
   songPlaceholder: {
     en: "What gets you on the dance floor?",
     es: "¿Qué te saca a bailar?",
-  },
-  requestPlusOne: {
-    en: "REQUEST A +1",
-    es: "SOLICITAR ACOMPAÑANTE",
-  },
-  requestPlusOneHint: {
-    en: "Would you like to bring a guest? Add their name(s) below.",
-    es: "¿Te gustaría traer acompañante? Añade su nombre o nombres.",
-  },
-  requestPlusOnePlaceholder: {
-    en: "e.g. John Smith, Jane Doe",
-    es: "ej. Juan Pérez, María García",
   },
   additionalInfo: {
     en: "ADDITIONAL INFO",

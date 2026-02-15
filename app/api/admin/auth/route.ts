@@ -6,12 +6,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const password = typeof body?.password === "string" ? body.password : "";
 
-    const adminPassword = process.env.ADMIN_PASSWORD;
+    const adminPassword = process.env.ADMIN_PASSWORD?.trim();
     if (!adminPassword) {
       return NextResponse.json({ error: "Admin not configured" }, { status: 500 });
     }
 
-    if (password !== adminPassword) {
+    if (password.trim() !== adminPassword) {
       return NextResponse.json({ error: "Invalid password" }, { status: 401 });
     }
 

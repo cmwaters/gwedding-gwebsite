@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchAllGuests } from "@/app/lib/guests";
-import { extractPlusOnes } from "@/app/lib/guestUtils";
 import {
   getAdminAuthCookie,
   verifyAdminToken,
@@ -20,8 +19,7 @@ export async function GET(request: NextRequest) {
       invite_code: g.invite_code,
       name: g.name,
       email: g.email ?? "",
-      plus_ones: extractPlusOnes(g.comments),
-      comments: (g.comments ?? "").replace(/\n\nPlus-one request: [\s\S]+/, "").trim(),
+      comments: g.comments ?? "",
       invite_received: g.invite_received ?? false,
       is_attending: g.is_attending,
     }));

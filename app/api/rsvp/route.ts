@@ -10,7 +10,6 @@ interface RsvpPayload {
   guests: GuestRsvp[];
   email: string;
   comments: string;
-  plus_one_names?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -38,15 +37,6 @@ export async function POST(request: NextRequest) {
     const supabase = createServerClient();
     const errors: string[] = [];
 
-    const commentsWithPlusOne = [
-      body.comments?.trim() || null,
-      body.plus_one_names?.trim()
-        ? `Plus-one request: ${body.plus_one_names.trim()}`
-        : null,
-    ]
-      .filter(Boolean)
-      .join("\n\n");
-
     // Update each guest's record
     for (const guest of body.guests) {
       const { error } = await supabase
@@ -54,7 +44,7 @@ export async function POST(request: NextRequest) {
         .update({
           is_attending: guest.is_attending,
           email: body.email,
-          comments: commentsWithPlusOne || null,
+          comments: body.comments?.trim() || null,
           updated_at: new Date().toISOString(),
         })
         .eq("invite_code", guest.invite_code);

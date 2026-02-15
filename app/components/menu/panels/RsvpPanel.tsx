@@ -40,15 +40,7 @@ function RsvpForm() {
   });
 
   const [email, setEmail] = useState(guests[0]?.email ?? "");
-  const [comments, setComments] = useState(() => {
-    const c = guests[0]?.comments ?? "";
-    return c.replace(/\n\nPlus-one request: [\s\S]+/, "").trim();
-  });
-  const [plusOneNames, setPlusOneNames] = useState(() => {
-    const c = guests[0]?.comments ?? "";
-    const match = c.match(/Plus-one request: ([\s\S]+)/);
-    return match ? match[1].trim() : "";
-  });
+  const [comments, setComments] = useState(guests[0]?.comments ?? "");
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
 
   const toggleAttendance = (code: string, value: boolean) => {
@@ -76,7 +68,6 @@ function RsvpForm() {
           })),
           email: email.trim(),
           comments: comments.trim(),
-          plus_one_names: plusOneNames.trim(),
         }),
       });
 
@@ -157,23 +148,6 @@ function RsvpForm() {
             </div>
           </div>
         ))}
-
-        {/* Request a +1 */}
-        <div>
-          <label className="block text-xs sm:text-sm mb-2 text-amber">
-            {t("requestPlusOne")}
-          </label>
-          <p className="text-cream text-[10px] sm:text-xs opacity-80 mb-2">
-            {t("requestPlusOneHint")}
-          </p>
-          <textarea
-            value={plusOneNames}
-            onChange={(e) => setPlusOneNames(e.target.value)}
-            className="retro-input"
-            rows={2}
-            placeholder={t("requestPlusOnePlaceholder")}
-          />
-        </div>
 
         {/* Contact Email */}
         <div>

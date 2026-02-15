@@ -9,7 +9,6 @@ interface GuestRow {
   invite_code: string;
   name: string;
   email: string;
-  plus_ones: string;
   comments: string;
   invite_received: boolean;
   is_attending: boolean | null;
@@ -228,7 +227,6 @@ export default function AdminPage() {
                 <th className="px-3 py-2 text-left border border-cream/30">invite_code</th>
                 <th className="px-3 py-2 text-left border border-cream/30">name</th>
                 <th className="px-3 py-2 text-left border border-cream/30">email</th>
-                <th className="px-3 py-2 text-left border border-cream/30">plus_ones</th>
                 <th className="px-3 py-2 text-left border border-cream/30">comments</th>
                 {tab === "to_be_invited" && (
                   <th className="px-3 py-2 text-left border border-cream/30 w-[120px]">
@@ -243,7 +241,6 @@ export default function AdminPage() {
                   <CopyableCell value={row.invite_code} />
                   <CopyableCell value={row.name} />
                   <CopyableCell value={row.email} />
-                  <CopyableCell value={row.plus_ones} />
                   <CopyableCell value={row.comments} className="max-w-[240px]" />
                   {tab === "to_be_invited" && (
                     <td className="px-3 py-2 border border-cream/30 align-middle">

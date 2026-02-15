@@ -59,4 +59,5 @@ export const GAME_CONFIG: GameConfig = {
 
 export const STORAGE_KEYS = {
   highScore: "villa-bettoni-high-score",
+  villaBeaten: "villa-bettoni-beaten",
 } as const;

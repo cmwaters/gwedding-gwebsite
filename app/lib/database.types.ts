@@ -5,6 +5,7 @@ export interface Guest {
   language: "en" | "es";
   rsvp_by: string | null;
   is_attending: boolean | null;
+  invite_received?: boolean | null;
   email: string | null;
   comments: string | null;
   created_at: string;

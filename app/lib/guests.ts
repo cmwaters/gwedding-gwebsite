@@ -2,27 +2,27 @@ import { createServerClient } from "./supabase";
 import type { Guest } from "./database.types";
 
 /**
- * Splits an invite URL code into 2-letter guest codes.
- * e.g. "abcdef" → ["ab", "cd", "ef"]
+ * Splits an invite URL code into 3-character guest codes.
+ * e.g. "abcdefghi" → ["ABC", "DEF", "GHI"]
  * Returns empty array if the code is invalid.
  */
 export function parseInviteCode(code: string): string[] {
   const upper = code.toUpperCase();
 
-  // Must be even length, only alphanumeric chars
-  if (upper.length === 0 || upper.length % 2 !== 0 || !/^[A-Z0-9]+$/.test(upper)) {
+  // Must be divisible by 3, only alphanumeric chars
+  if (upper.length === 0 || upper.length % 3 !== 0 || !/^[A-Z0-9]+$/.test(upper)) {
     return [];
   }
 
   const codes: string[] = [];
-  for (let i = 0; i < upper.length; i += 2) {
-    codes.push(upper.slice(i, i + 2));
+  for (let i = 0; i < upper.length; i += 3) {
+    codes.push(upper.slice(i, i + 3));
   }
   return codes;
 }
 
 /**
- * Fetches guest records matching the given 2-letter codes.
+ * Fetches guest records matching the given 3-character codes.
  */
 export async function fetchGuestsByCode(codes: string[]): Promise<Guest[]> {
   if (codes.length === 0) return [];
@@ -36,6 +36,24 @@ export async function fetchGuestsByCode(codes: string[]): Promise<Guest[]> {
   if (error) {
     console.error("Supabase query error:", error.message, error.code, error.details, error.hint);
     return [];
+  }
+
+  return (data as Guest[]) ?? [];
+}
+
+/**
+ * Fetches all guest records from the database (admin use).
+ */
+export async function fetchAllGuests(): Promise<Guest[]> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("guests")
+    .select("*")
+    .order("name");
+
+  if (error) {
+    console.error("Supabase fetchAllGuests error:", error.message);
+    throw new Error(error.message);
   }
 
   return (data as Guest[]) ?? [];

@@ -20,8 +20,18 @@ export default function HomeContent() {
   const guestGroup = useGuests();
   const [screen, setScreen] = useState<Screen>("menu");
   const [gameResult, setGameResult] = useState<GameResult | null>(null);
+  const [hasBeatenVilla, setHasBeatenVilla] = useState(false);
   const isEndlessRef = useRef(false);
   const gameRef = useRef<GameCanvasHandle>(null);
+
+  // Check localStorage on mount for villa-beaten unlock
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("villa-bettoni-beaten") === "1") {
+        setHasBeatenVilla(true);
+      }
+    } catch {}
+  }, []);
 
   // Aggregated group name for leaderboard (null for anonymous visitors)
   const groupName = useMemo(
@@ -38,7 +48,7 @@ export default function HomeContent() {
   };
 
   const handleGameEnd = useCallback(
-    (result: "gameover" | "won", score: number) => {
+    (result: "gameover" | "won", score: number, finishScore: number) => {
       const submitted = groupName !== null && score > 0;
 
       // Submit score to leaderboard (fire-and-forget)
@@ -50,11 +60,20 @@ export default function HomeContent() {
         }).catch((err) => console.error("Score submit failed:", err));
       }
 
+      // Calculate progress percentage for normal mode
+      const progressPct = Math.min(100, Math.round((score / finishScore) * 100));
+
+      // If they won normal mode, unlock endless
+      if (result === "won" && !isEndlessRef.current) {
+        setHasBeatenVilla(true);
+      }
+
       setGameResult({
         type: result,
         score,
         wasEndless: isEndlessRef.current,
         scoreSubmitted: submitted,
+        progressPct,
       });
       setScreen("game-submenu");
     },
@@ -124,6 +143,7 @@ export default function HomeContent() {
       {screen === "game-submenu" && (
         <GameSubmenu
           gameResult={gameResult}
+          hasBeatenVilla={hasBeatenVilla}
           onStartNormal={handleStartNormal}
           onStartEndless={handleStartEndless}
           onMenu={handleBackToMenu}

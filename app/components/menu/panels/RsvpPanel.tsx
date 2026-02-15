@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useLanguage } from "@/app/i18n";
 import { useGuests } from "@/app/context/GuestContext";
 import { aggregateGuestNames } from "@/app/lib/guestUtils";
+import Confetti from "../../Confetti";
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
 
@@ -39,7 +40,15 @@ function RsvpForm() {
   });
 
   const [email, setEmail] = useState(guests[0]?.email ?? "");
-  const [comments, setComments] = useState(guests[0]?.comments ?? "");
+  const [comments, setComments] = useState(() => {
+    const c = guests[0]?.comments ?? "";
+    return c.replace(/\n\nPlus-one request: .+/s, "").trim();
+  });
+  const [plusOneNames, setPlusOneNames] = useState(() => {
+    const c = guests[0]?.comments ?? "";
+    const match = c.match(/Plus-one request: (.+)/s);
+    return match ? match[1].trim() : "";
+  });
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
 
   const toggleAttendance = (code: string, value: boolean) => {
@@ -67,6 +76,7 @@ function RsvpForm() {
           })),
           email: email.trim(),
           comments: comments.trim(),
+          plus_one_names: plusOneNames.trim(),
         }),
       });
 
@@ -82,6 +92,7 @@ function RsvpForm() {
     const anyAttending = guests.some((g) => attendance[g.invite_code] === true);
     return (
       <div className="text-cream flex flex-col items-center justify-center min-h-[200px]">
+        {anyAttending && <Confetti />}
         <p className="text-amber text-base sm:text-lg mb-4">{t("rsvpReceived")}</p>
         {anyAttending ? (
           <>
@@ -97,12 +108,6 @@ function RsvpForm() {
             {t("wellMissYou")}
           </p>
         )}
-        <button
-          onClick={() => setSubmitState("idle")}
-          className="mt-6 text-cream/40 text-[10px] hover:text-cream transition-colors cursor-pointer bg-transparent border-none"
-        >
-          {t("submitAnother")}
-        </button>
       </div>
     );
   }
@@ -152,6 +157,23 @@ function RsvpForm() {
             </div>
           </div>
         ))}
+
+        {/* Request a +1 */}
+        <div>
+          <label className="block text-xs sm:text-sm mb-2 text-amber">
+            {t("requestPlusOne")}
+          </label>
+          <p className="text-cream text-[10px] sm:text-xs opacity-80 mb-2">
+            {t("requestPlusOneHint")}
+          </p>
+          <textarea
+            value={plusOneNames}
+            onChange={(e) => setPlusOneNames(e.target.value)}
+            className="retro-input"
+            rows={2}
+            placeholder={t("requestPlusOnePlaceholder")}
+          />
+        </div>
 
         {/* Contact Email */}
         <div>

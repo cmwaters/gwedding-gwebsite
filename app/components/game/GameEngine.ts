@@ -29,6 +29,7 @@ export class GameEngine {
   // Difficulty scaling
   private currentSpawnInterval: number; // Current max spawn interval
   private doubleSpawnTimer: number = 0; // Countdown for delayed second ball
+  private lastSpawnedType: ObstacleType | null = null;
 
   // FPS tracking
   private fps: number = 60;
@@ -57,7 +58,7 @@ export class GameEngine {
   private coupleOffsetFromVilla: number = 0; // Fixed offset from villa position (set once)
 
   // Callback when game ends (gameover or won)
-  public onGameEnd: ((result: "gameover" | "won", score: number) => void) | null = null;
+  public onGameEnd: ((result: "gameover" | "won", score: number, finishScore: number) => void) | null = null;
 
   // Mobile detection — slower balls, dog closer to left
   private isMobile: boolean;
@@ -232,11 +233,11 @@ export class GameEngine {
     this.gameState = "idle";
   }
 
-  private spawnObstacle(): void {
-    // Random type selection, 50/50 split between low and high arc balls
-    const type: ObstacleType = Math.random() > 0.5 ? "low" : "high";
+  private spawnObstacle(forceType?: ObstacleType): void {
+    const type: ObstacleType = forceType ?? (Math.random() > 0.5 ? "low" : "high");
     const dogCenterX = this.dog.position.x + this.dog.width / 2;
     this.obstacles.push(new Obstacle(type, this.currentSpeed, this.canvas.width, this.groundY, dogCenterX));
+    this.lastSpawnedType = type;
   }
 
   private update(deltaTime: number): void {
@@ -335,11 +336,12 @@ export class GameEngine {
         this.nextObstacleTime = this.getRandomSpawnTime();
       }
 
-      // Handle delayed double spawn
+      // Handle delayed double spawn — always opposite type from the first
       if (this.doubleSpawnTimer > 0) {
         this.doubleSpawnTimer -= deltaTime;
         if (this.doubleSpawnTimer <= 0) {
-          this.spawnObstacle();
+          const oppositeType: ObstacleType = this.lastSpawnedType === "low" ? "high" : "low";
+          this.spawnObstacle(oppositeType);
           this.doubleSpawnTimer = 0;
         }
       }
@@ -385,7 +387,10 @@ export class GameEngine {
       this.highScore = this.score;
       this.saveHighScore();
     }
-    this.onGameEnd?.(result, Math.floor(this.score));
+    if (result === "won" && !this.endless) {
+      try { localStorage.setItem(STORAGE_KEYS.villaBeaten, "1"); } catch {}
+    }
+    this.onGameEnd?.(result, Math.floor(this.score), GAME_CONFIG.scoring.finishScore);
   }
 
   private draw(): void {

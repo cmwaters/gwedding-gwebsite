@@ -10,7 +10,7 @@ export interface GameCanvasHandle {
 }
 
 interface GameCanvasProps {
-  onGameEnd?: (result: "gameover" | "won", score: number) => void;
+  onGameEnd?: (result: "gameover" | "won", score: number, finishScore: number) => void;
 }
 
 const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(

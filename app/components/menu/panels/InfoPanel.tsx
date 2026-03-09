@@ -21,10 +21,13 @@ export default function InfoPanel() {
         </p>
       </PanelSection>
       <PanelSection title={t("dressCode")}>
-        <p>{t("detailsSoon")}</p>
+        <p className="font-bold">{t("dressCodeAperitivoTitle")}</p>
+        <p style={{ marginTop: '0.2rem' }}>{t("dressCodeAperitivoDesc")}</p>
+        <p className="font-bold" style={{ marginTop: '0.75rem' }}>{t("dressCodeWeddingTitle")}</p>
+        <p style={{ marginTop: '0.2rem' }}>{t("dressCodeWeddingDesc")}</p>
       </PanelSection>
-      <PanelSection title={t("gifts")}>
-        <p>{t("detailsSoon")}</p>
+      <PanelSection title={t("shuttleTimetable")}>
+        <p>{t("shuttleTimetableSoon")}</p>
       </PanelSection>
       <PanelSection border={false}>
         <p>{t("stillHaveQuestions")}</p>

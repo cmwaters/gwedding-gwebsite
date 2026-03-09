@@ -93,12 +93,12 @@ export const translations = {
     es: "DOMINGO 27 DE SEPTIEMBRE",
   },
   eveningGathering: {
-    en: "EVENING GATHERING",
-    es: "REUNIÓN DE BIENVENIDA",
+    en: "WELCOME APERITIVO",
+    es: "APERITIVO DE BIENVENIDA",
   },
   eveningGatheringDetails: {
-    en: "7:00 PM - Late @ Villa Isa",
-    es: "7:00 PM - Late @ Villa Isa",
+    en: "6:00 PM - 9:00 PM @ Villa Isa",
+    es: "6:00 PM - 9:00 PM @ Villa Isa",
   },
   eveningGatheringDesc: {
     en: "Charcuterie board, pizzas & drinks",
@@ -106,16 +106,16 @@ export const translations = {
   },
   ceremony: { en: "CEREMONY", es: "CEREMONIA" },
   ceremonyDetails: {
-    en: "~3:00 PM @ Villa Isa",
-    es: "~3:00 PM @ Villa Isa",
+    en: "~2:00 PM @ Villa Isa",
+    es: "~2:00 PM @ Villa Isa",
   },
   dinnerAndParty: {
-    en: "DINNER & PARTY",
-    es: "CENA Y FIESTA",
+    en: "RECEPTION",
+    es: "RECEPCIÓN",
   },
   dinnerAndPartyDetails: {
-    en: "6:00 PM - Midnight @ Villa Bettoni",
-    es: "6:00 PM - Medianoche @ Villa Bettoni",
+    en: "3:00 PM - Midnight @ Villa Bettoni",
+    es: "3:00 PM - Medianoche @ Villa Bettoni",
   },
   moreInfoToCome: {
     en: "More info to come",
@@ -161,7 +161,22 @@ export const translations = {
     en: "Details coming soon",
     es: "Detalles próximamente",
   },
+  shuttleTimetable: { en: "SHUTTLE TIMETABLE", es: "HORARIO DE TRASLADO" },
+  shuttleTimetableSoon: {
+    en: "Times to be confirmed",
+    es: "Horarios por confirmar",
+  },
   dressCode: { en: "DRESS CODE", es: "CÓDIGO DE VESTIMENTA" },
+  dressCodeAperitivoTitle: { en: "Aperitivo Night", es: "Noche de Aperitivo" },
+  dressCodeAperitivoDesc: {
+    en: "Italian casual. Come comfortable and relaxed — dresses, shirts, trousers, or similar. Evenings by the lake can be cool, so bringing a light layer is a good idea.",
+    es: "Casual italiano. Ven cómodo y relajado — vestidos, camisas, pantalones o similar. Las noches junto al lago pueden ser frescas, así que una capa ligera es buena idea.",
+  },
+  dressCodeWeddingTitle: { en: "Wedding Day", es: "Día de la Boda" },
+  dressCodeWeddingDesc: {
+    en: "Formal, but most importantly comfortable. Wear whatever makes you feel good celebrating with us. Layers for the evening are recommended.",
+    es: "Formal, pero sobre todo cómodo. Viste lo que te haga sentir bien celebrando con nosotros. Se recomiendan capas para la noche.",
+  },
   gifts: { en: "GIFTS", es: "REGALOS" },
   stillHaveQuestions: {
     en: "Still have questions?",

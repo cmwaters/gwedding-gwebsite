@@ -9,8 +9,16 @@ export default function InfoPanel() {
   return (
     <div className="text-cream">
       <PanelSection title={t("venue")}>
-        <p>{t("venueIsa")}</p>
-        <p style={{ marginTop: '0.25rem' }}>{t("venueBettoni")}</p>
+        <p>
+          <a href="https://maps.app.goo.gl/cXWvxknccLBs5c8d8" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80">
+            {t("venueIsa")}
+          </a>
+        </p>
+        <p style={{ marginTop: '0.25rem' }}>
+          <a href="https://maps.app.goo.gl/gud7Qd3FtgfX5Z4x9" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80">
+            {t("venueBettoni")}
+          </a>
+        </p>
       </PanelSection>
       <PanelSection title={t("dressCode")}>
         <p>{t("detailsSoon")}</p>

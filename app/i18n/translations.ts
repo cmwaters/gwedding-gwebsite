@@ -7,8 +7,8 @@ export const translations = {
     es: "¡Les invitan a su Boda!",
   },
   menuDate: {
-    en: "19-20 September 2026",
-    es: "19-20 Septiembre 2026",
+    en: "26-27 September 2026",
+    es: "26-27 Septiembre 2026",
   },
   menuStart: { en: "Play", es: "Jugar" },
   menuSchedule: { en: "Schedule", es: "Programa" },
@@ -85,12 +85,12 @@ export const translations = {
 
   // ── Schedule ──
   saturdayTitle: {
-    en: "SATURDAY 19TH SEPTEMBER",
-    es: "SÁBADO 19 DE SEPTIEMBRE",
+    en: "SATURDAY 26TH SEPTEMBER",
+    es: "SÁBADO 26 DE SEPTIEMBRE",
   },
   sundayTitle: {
-    en: "SUNDAY 20TH SEPTEMBER",
-    es: "DOMINGO 20 DE SEPTIEMBRE",
+    en: "SUNDAY 27TH SEPTEMBER",
+    es: "DOMINGO 27 DE SEPTIEMBRE",
   },
   eveningGathering: {
     en: "EVENING GATHERING",
@@ -138,9 +138,13 @@ export const translations = {
     es: "Detalles de alojamiento próximamente",
   },
   gettingAround: { en: "GETTING AROUND", es: "MOVERSE POR LA ZONA" },
-  localTransportSoon: {
-    en: "Local transport details coming soon",
-    es: "Detalles de transporte próximamente",
+  gettingAroundCar: {
+    en: "Renting a car is recommended. If not from the EU, you will need an International Driving Permit. Rental companies usually only accept credit card.",
+    es: "Se recomienda alquilar un coche. Si no eres de la UE, necesitarás un Permiso Internacional de Conducir. Las empresas de alquiler generalmente solo aceptan tarjeta de crédito.",
+  },
+  gettingAroundShuttle: {
+    en: "A shuttle will run between the main hotels and the venues.",
+    es: "Habrá un servicio de traslado entre los hoteles principales y los lugares del evento.",
   },
 
   // ── Info ──

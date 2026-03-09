@@ -255,7 +255,8 @@ export default function AdminPage() {
     g.comments?.toLowerCase().includes(q)
   );
 
-  const showHotelCol = tab === "coming";
+  const showHotelActionCol = tab === "to_be_invited" || tab === "pending";
+  const showHotelStatusCol = tab === "coming";
   const showResponseCols = tab === "coming" || tab === "not_coming";
 
   return (
@@ -311,11 +312,11 @@ export default function AdminPage() {
                 <th className="px-3 py-2 text-left border border-cream/30">name</th>
                 {showResponseCols && <th className="px-3 py-2 text-left border border-cream/30">email</th>}
                 {showResponseCols && <th className="px-3 py-2 text-left border border-cream/30">comments</th>}
-                {tab === "to_be_invited" && (
-                  <th className="px-3 py-2 text-left border border-cream/30 w-[120px]">action</th>
+                {showHotelActionCol && (
+                  <th className="px-3 py-2 text-left border border-cream/30 w-[180px]">action</th>
                 )}
-                {showHotelCol && (
-                  <th className="px-3 py-2 text-left border border-cream/30 w-[160px]">hotel</th>
+                {showHotelStatusCol && (
+                  <th className="px-3 py-2 text-left border border-cream/30 w-[80px]">hotel</th>
                 )}
               </tr>
             </thead>
@@ -326,34 +327,34 @@ export default function AdminPage() {
                   <CopyableCell value={row.name} />
                   {showResponseCols && <CopyableCell value={row.email} />}
                   {showResponseCols && <CopyableCell value={row.comments} className="max-w-[240px]" />}
-                  {tab === "to_be_invited" && (
+                  {showHotelActionCol && (
                     <td className="px-3 py-2 border border-cream/30 align-middle">
-                      <MarkAsInvitedButton
-                        guestId={row.id}
-                        onSuccess={() => checkAuth()}
-                      />
-                    </td>
-                  )}
-                  {showHotelCol && (
-                    <td className="px-3 py-2 border border-cream/30 align-middle">
-                      <div className="flex flex-col gap-1">
+                      <div className="flex flex-wrap gap-1">
+                        {tab === "to_be_invited" && (
+                          <MarkAsInvitedButton
+                            guestId={row.id}
+                            onSuccess={() => checkAuth()}
+                          />
+                        )}
                         <ToggleHotelButton
                           guestId={row.id}
                           offeredHotel={row.offered_hotel}
                           onSuccess={() => checkAuth()}
                         />
-                        {row.offered_hotel && (
-                          <span className={`text-[10px] ${
-                            row.accepted_hotel === true ? "text-amber" :
-                            row.accepted_hotel === false ? "text-coral" :
-                            "text-cream/40"
-                          }`}>
-                            {row.accepted_hotel === true ? "Accepted" :
-                             row.accepted_hotel === false ? "Declined" :
-                             "Awaiting response"}
-                          </span>
-                        )}
                       </div>
+                    </td>
+                  )}
+                  {showHotelStatusCol && (
+                    <td className="px-3 py-2 border border-cream/30 align-middle text-center">
+                      {!row.offered_hotel ? (
+                        <span className="text-cream/30 text-[10px]">—</span>
+                      ) : row.accepted_hotel === true ? (
+                        <span className="text-amber text-sm">✓</span>
+                      ) : row.accepted_hotel === false ? (
+                        <span className="text-coral text-sm">✗</span>
+                      ) : (
+                        <span className="text-cream/40 text-[10px]">?</span>
+                      )}
                     </td>
                   )}
                 </tr>

@@ -18,11 +18,11 @@ interface MenuEntry {
 }
 
 const BASE_MENU_ITEMS: MenuEntry[] = [
-  { labelKey: "menuStart", screen: "game-submenu" },
   { labelKey: "menuSchedule", screen: "schedule" },
   { labelKey: "menuTravelStay", screen: "travel" },
   { labelKey: "menuInfo", screen: "info" },
   { labelKey: "menuGallery", screen: "gallery", locked: !SITE_CONFIG.galleryUnlocked },
+  { labelKey: "menuStart", screen: "game-submenu" },
 ];
 
 const RSVP_ITEM: MenuEntry = { labelKey: "menuRsvp", screen: "rsvp" };
@@ -34,7 +34,7 @@ export default function RetroMenu({ onSelect }: RetroMenuProps) {
 
   // Only show RSVP when user has an invite code (guestGroup is not null)
   const showRsvp = guestGroup !== null;
-  const menuItems = showRsvp ? [...BASE_MENU_ITEMS, RSVP_ITEM] : BASE_MENU_ITEMS;
+  const menuItems = showRsvp ? [RSVP_ITEM, ...BASE_MENU_ITEMS] : BASE_MENU_ITEMS;
 
   const handleSelect = useCallback(
     (index: number) => {
@@ -137,9 +137,31 @@ export default function RetroMenu({ onSelect }: RetroMenuProps) {
         {t("menuDate")}
       </p>
 
+      {/* RSVP button — only shown for authorised guests, separated with white border */}
+      {showRsvp && (() => {
+        const rsvpIndex = 0;
+        let rsvpLabel = t(RSVP_ITEM.labelKey);
+        if (guestGroup?.rsvpByDate) {
+          rsvpLabel = `${rsvpLabel} (${t("rsvpByPrefix")} ${guestGroup.rsvpByDate})`;
+        }
+        return (
+          <div className="w-full max-w-sm border-2 border-white rounded" style={{ marginBottom: '1rem' }}>
+            <MenuItem
+              label={rsvpLabel}
+              isSelected={selectedIndex === rsvpIndex}
+              onClick={() => {
+                setSelectedIndex(rsvpIndex);
+                handleSelect(rsvpIndex);
+              }}
+            />
+          </div>
+        );
+      })()}
+
       {/* Menu items */}
       <nav className="w-full max-w-sm">
-        {BASE_MENU_ITEMS.map((item, index) => {
+        {BASE_MENU_ITEMS.map((item, i) => {
+          const index = showRsvp ? i + 1 : i;
           return (
             <MenuItem
               key={item.screen}
@@ -154,27 +176,6 @@ export default function RetroMenu({ onSelect }: RetroMenuProps) {
           );
         })}
       </nav>
-
-      {/* RSVP button — only shown for authorised guests, separated with white border */}
-      {showRsvp && (() => {
-        const rsvpIndex = menuItems.length - 1;
-        let rsvpLabel = t(RSVP_ITEM.labelKey);
-        if (guestGroup?.rsvpByDate) {
-          rsvpLabel = `${rsvpLabel} (${t("rsvpByPrefix")} ${guestGroup.rsvpByDate})`;
-        }
-        return (
-          <div className="w-full max-w-sm border-2 border-white rounded" style={{ marginTop: '1rem' }}>
-            <MenuItem
-              label={rsvpLabel}
-              isSelected={selectedIndex === rsvpIndex}
-              onClick={() => {
-                setSelectedIndex(rsvpIndex);
-                handleSelect(rsvpIndex);
-              }}
-            />
-          </div>
-        );
-      })()}
 
       {/* Footer hint */}
       <p className="text-cream/60 text-[10px] sm:text-xs text-center" style={{ marginTop: '1.5rem' }}>

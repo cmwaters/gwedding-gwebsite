@@ -7,8 +7,8 @@ export const translations = {
     es: "¡Les invitan a su Boda!",
   },
   menuDate: {
-    en: "19-20 September 2026",
-    es: "19-20 Septiembre 2026",
+    en: "26-27 September 2026",
+    es: "26-27 Septiembre 2026",
   },
   menuStart: { en: "Play", es: "Jugar" },
   menuSchedule: { en: "Schedule", es: "Programa" },
@@ -85,20 +85,20 @@ export const translations = {
 
   // ── Schedule ──
   saturdayTitle: {
-    en: "SATURDAY 19TH SEPTEMBER",
-    es: "SÁBADO 19 DE SEPTIEMBRE",
+    en: "SATURDAY 26TH SEPTEMBER",
+    es: "SÁBADO 26 DE SEPTIEMBRE",
   },
   sundayTitle: {
-    en: "SUNDAY 20TH SEPTEMBER",
-    es: "DOMINGO 20 DE SEPTIEMBRE",
+    en: "SUNDAY 27TH SEPTEMBER",
+    es: "DOMINGO 27 DE SEPTIEMBRE",
   },
   eveningGathering: {
-    en: "EVENING GATHERING",
-    es: "REUNIÓN DE BIENVENIDA",
+    en: "WELCOME APERITIVO",
+    es: "APERITIVO DE BIENVENIDA",
   },
   eveningGatheringDetails: {
-    en: "7:00 PM - Late @ Villa Isa",
-    es: "7:00 PM - Late @ Villa Isa",
+    en: "6:00 PM - 9:00 PM @ Villa Isa",
+    es: "6:00 PM - 9:00 PM @ Villa Isa",
   },
   eveningGatheringDesc: {
     en: "Charcuterie board, pizzas & drinks",
@@ -106,16 +106,16 @@ export const translations = {
   },
   ceremony: { en: "CEREMONY", es: "CEREMONIA" },
   ceremonyDetails: {
-    en: "~3:00 PM @ Villa Isa",
-    es: "~3:00 PM @ Villa Isa",
+    en: "~2:00 PM @ Villa Isa",
+    es: "~2:00 PM @ Villa Isa",
   },
   dinnerAndParty: {
-    en: "DINNER & PARTY",
-    es: "CENA Y FIESTA",
+    en: "RECEPTION",
+    es: "RECEPCIÓN",
   },
   dinnerAndPartyDetails: {
-    en: "6:00 PM - Midnight @ Villa Bettoni",
-    es: "6:00 PM - Medianoche @ Villa Bettoni",
+    en: "3:00 PM - Midnight @ Villa Bettoni",
+    es: "3:00 PM - Medianoche @ Villa Bettoni",
   },
   moreInfoToCome: {
     en: "More info to come",
@@ -138,9 +138,13 @@ export const translations = {
     es: "Detalles de alojamiento próximamente",
   },
   gettingAround: { en: "GETTING AROUND", es: "MOVERSE POR LA ZONA" },
-  localTransportSoon: {
-    en: "Local transport details coming soon",
-    es: "Detalles de transporte próximamente",
+  gettingAroundCar: {
+    en: "Renting a car is recommended. If not from the EU, you will need an International Driving Permit. Rental companies usually only accept credit card.",
+    es: "Se recomienda alquilar un coche. Si no eres de la UE, necesitarás un Permiso Internacional de Conducir. Las empresas de alquiler generalmente solo aceptan tarjeta de crédito.",
+  },
+  gettingAroundShuttle: {
+    en: "A shuttle will run between the main hotels and the venues.",
+    es: "Habrá un servicio de traslado entre los hoteles principales y los lugares del evento.",
   },
 
   // ── Info ──
@@ -157,7 +161,22 @@ export const translations = {
     en: "Details coming soon",
     es: "Detalles próximamente",
   },
+  shuttleTimetable: { en: "SHUTTLE TIMETABLE", es: "HORARIO DE TRASLADO" },
+  shuttleTimetableSoon: {
+    en: "Times to be confirmed",
+    es: "Horarios por confirmar",
+  },
   dressCode: { en: "DRESS CODE", es: "CÓDIGO DE VESTIMENTA" },
+  dressCodeAperitivoTitle: { en: "Aperitivo Night", es: "Noche de Aperitivo" },
+  dressCodeAperitivoDesc: {
+    en: "Italian casual. Come comfortable and relaxed — dresses, shirts, trousers, or similar. Evenings by the lake can be cool, so bringing a light layer is a good idea.",
+    es: "Casual italiano. Ven cómodo y relajado — vestidos, camisas, pantalones o similar. Las noches junto al lago pueden ser frescas, así que una capa ligera es buena idea.",
+  },
+  dressCodeWeddingTitle: { en: "Wedding Day", es: "Día de la Boda" },
+  dressCodeWeddingDesc: {
+    en: "Formal, but most importantly comfortable. Wear whatever makes you feel good celebrating with us. Layers for the evening are recommended.",
+    es: "Formal, pero sobre todo cómodo. Viste lo que te haga sentir bien celebrando con nosotros. Se recomiendan capas para la noche.",
+  },
   gifts: { en: "GIFTS", es: "REGALOS" },
   stillHaveQuestions: {
     en: "Still have questions?",
@@ -242,6 +261,17 @@ export const translations = {
     es: "Mensaje opcional...",
   },
   sendRsvp: { en: "SEND RSVP", es: "ENVIAR CONFIRMACIÓN" },
+
+  // ── Hotel offer ──
+  hotelOfferTitle: { en: "HOTEL", es: "HOTEL" },
+  hotelOfferMessage: {
+    en: "We appreciate the commitment of coming to our big day and would like to offer you 2 nights at Hotel Spiaggia d\u2019Oro during the wedding. Do you accept?",
+    es: "Apreciamos el compromiso de venir a nuestro gran día y nos gustaría ofrecerte 2 noches en el Hotel Spiaggia d\u2019Oro durante la boda. ¿Aceptas?",
+  },
+  hotelAccepted: { en: "Hotel accepted!", es: "¡Hotel aceptado!" },
+  hotelDeclined: { en: "Hotel declined.", es: "Hotel rechazado." },
+  hotelSaving: { en: "SAVING...", es: "GUARDANDO..." },
+  hotelSave: { en: "SAVE", es: "GUARDAR" },
 
   // ── Leaderboard ──
   menuLeaderboard: { en: "Leaderboard", es: "Tabla de Posiciones" },

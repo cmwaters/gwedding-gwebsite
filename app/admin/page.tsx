@@ -12,6 +12,14 @@ interface GuestRow {
   comments: string;
   invite_received: boolean;
   is_attending: boolean | null;
+  offered_hotel: boolean;
+  accepted_hotel: boolean | null;
+}
+
+interface HotelStats {
+  offered: number;
+  accepted: number;
+  declined: number;
 }
 
 const TABS: { id: TabId; label: string }[] = [
@@ -50,6 +58,8 @@ function MarkAsInvitedButton({
     try {
       const res = await fetch(`/api/admin/guests/${guestId}`, {
         method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "mark_invited" }),
       });
       if (res.ok) onSuccess();
     } finally {
@@ -65,6 +75,47 @@ function MarkAsInvitedButton({
       className="text-[10px] px-2 py-1 border border-amber text-amber hover:bg-amber hover:text-charcoal transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {loading ? "..." : "Invited"}
+    </button>
+  );
+}
+
+function ToggleHotelButton({
+  guestId,
+  offeredHotel,
+  onSuccess,
+}: {
+  guestId: string;
+  offeredHotel: boolean;
+  onSuccess: () => void;
+}) {
+  const [loading, setLoading] = useState(false);
+
+  const handleClick = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/guests/${guestId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "toggle_hotel", offered_hotel: !offeredHotel }),
+      });
+      if (res.ok) onSuccess();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={loading}
+      className={`text-[10px] px-2 py-1 border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+        offeredHotel
+          ? "border-coral text-coral hover:bg-coral hover:text-charcoal"
+          : "border-cream/50 text-cream/70 hover:bg-cream/10"
+      }`}
+    >
+      {loading ? "..." : offeredHotel ? "Uninvite Hotel" : "Offer Hotel"}
     </button>
   );
 }
@@ -112,14 +163,17 @@ export default function AdminPage() {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [guests, setGuests] = useState<GuestRow[]>([]);
+  const [hotelStats, setHotelStats] = useState<HotelStats>({ offered: 0, accepted: 0, declined: 0 });
   const [tab, setTab] = useState<TabId>("to_be_invited");
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
   const checkAuth = async () => {
     const res = await fetch("/api/admin/guests");
     if (res.ok) {
       const data = await res.json();
-      setGuests(data);
+      setGuests(data.rows);
+      setHotelStats(data.hotelStats);
       setAuthed(true);
     } else {
       setAuthed(false);
@@ -142,7 +196,9 @@ export default function AdminPage() {
     if (res.ok) {
       const data = await fetch("/api/admin/guests");
       if (data.ok) {
-        setGuests(await data.json());
+        const json = await data.json();
+        setGuests(json.rows);
+        setHotelStats(json.hotelStats);
         setAuthed(true);
       }
     } else {
@@ -190,11 +246,31 @@ export default function AdminPage() {
     );
   }
 
-  const filtered = filterByTab(guests, tab);
+  const q = search.trim().toLowerCase();
+  const filtered = filterByTab(guests, tab).filter((g) =>
+    !q ||
+    g.name?.toLowerCase().includes(q) ||
+    g.email?.toLowerCase().includes(q) ||
+    g.invite_code?.toLowerCase().includes(q) ||
+    g.comments?.toLowerCase().includes(q)
+  );
+
+  const showHotelActionCol = tab === "to_be_invited" || tab === "pending";
+  const showHotelStatusCol = tab === "coming";
+  const showResponseCols = tab === "coming" || tab === "not_coming";
 
   return (
     <div className="h-screen bg-charcoal text-cream p-4 sm:p-6 overflow-y-auto overflow-x-hidden">
-      <h1 className="text-amber text-base sm:text-lg mb-4">Invitees</h1>
+      <div className="flex items-baseline justify-between mb-4">
+        <h1 className="text-amber text-base sm:text-lg">Invitees</h1>
+        {hotelStats.offered > 0 && (
+          <p className="text-xs text-cream/60">
+            Hotel: <span className="text-amber">{hotelStats.offered}</span> offered &middot;{" "}
+            <span className="text-amber">{hotelStats.accepted}</span> accepted &middot;{" "}
+            <span className="text-coral">{hotelStats.declined}</span> declined
+          </p>
+        )}
+      </div>
 
       <div className="flex gap-2 mb-4 border-b border-cream/30 pb-2 overflow-x-auto">
         {TABS.map((t) => (
@@ -215,6 +291,14 @@ export default function AdminPage() {
         ))}
       </div>
 
+      <input
+        type="search"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search by name, email, code, comments…"
+        className="retro-input w-full max-w-sm mb-4 text-xs"
+      />
+
       <div className="overflow-x-auto">
         {filtered.length === 0 ? (
           <p className="text-cream/60 text-xs py-6 text-center">
@@ -226,12 +310,13 @@ export default function AdminPage() {
               <tr className="text-amber border-b border-cream/50">
                 <th className="px-3 py-2 text-left border border-cream/30">invite_code</th>
                 <th className="px-3 py-2 text-left border border-cream/30">name</th>
-                <th className="px-3 py-2 text-left border border-cream/30">email</th>
-                <th className="px-3 py-2 text-left border border-cream/30">comments</th>
-                {tab === "to_be_invited" && (
-                  <th className="px-3 py-2 text-left border border-cream/30 w-[120px]">
-                    action
-                  </th>
+                {showResponseCols && <th className="px-3 py-2 text-left border border-cream/30">email</th>}
+                {showResponseCols && <th className="px-3 py-2 text-left border border-cream/30">comments</th>}
+                {showHotelActionCol && (
+                  <th className="px-3 py-2 text-left border border-cream/30 w-[180px]">action</th>
+                )}
+                {showHotelStatusCol && (
+                  <th className="px-3 py-2 text-left border border-cream/30 w-[80px]">hotel</th>
                 )}
               </tr>
             </thead>
@@ -240,14 +325,36 @@ export default function AdminPage() {
                 <tr key={row.id} className="relative">
                   <CopyableCell value={row.invite_code} />
                   <CopyableCell value={row.name} />
-                  <CopyableCell value={row.email} />
-                  <CopyableCell value={row.comments} className="max-w-[240px]" />
-                  {tab === "to_be_invited" && (
+                  {showResponseCols && <CopyableCell value={row.email} />}
+                  {showResponseCols && <CopyableCell value={row.comments} className="max-w-[240px]" />}
+                  {showHotelActionCol && (
                     <td className="px-3 py-2 border border-cream/30 align-middle">
-                      <MarkAsInvitedButton
-                        guestId={row.id}
-                        onSuccess={() => checkAuth()}
-                      />
+                      <div className="flex flex-wrap gap-1">
+                        {tab === "to_be_invited" && (
+                          <MarkAsInvitedButton
+                            guestId={row.id}
+                            onSuccess={() => checkAuth()}
+                          />
+                        )}
+                        <ToggleHotelButton
+                          guestId={row.id}
+                          offeredHotel={row.offered_hotel}
+                          onSuccess={() => checkAuth()}
+                        />
+                      </div>
+                    </td>
+                  )}
+                  {showHotelStatusCol && (
+                    <td className="px-3 py-2 border border-cream/30 align-middle text-center">
+                      {!row.offered_hotel ? (
+                        <span className="text-cream/30 text-[10px]">—</span>
+                      ) : row.accepted_hotel === true ? (
+                        <span className="text-amber text-sm">✓</span>
+                      ) : row.accepted_hotel === false ? (
+                        <span className="text-coral text-sm">✗</span>
+                      ) : (
+                        <span className="text-cream/40 text-[10px]">?</span>
+                      )}
                     </td>
                   )}
                 </tr>

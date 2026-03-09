@@ -13,30 +13,53 @@ export async function PATCH(
 
   const { id } = await params;
 
+  let body: { action?: string; offered_hotel?: boolean } = {};
+  try {
+    body = await request.json();
+  } catch {
+    // No body — treat as mark_invited (backwards compat)
+  }
+
+  const action = body.action ?? "mark_invited";
+
   try {
     const supabase = createServerClient();
-    const { error } = await supabase
-      .from("guests")
-      .update({
-        invite_received: true,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", id);
 
-    if (error) {
-      console.error("Admin mark invited error:", error.message);
-      return NextResponse.json(
-        { error: "Failed to update guest" },
-        { status: 500 }
-      );
+    if (action === "mark_invited") {
+      const { error } = await supabase
+        .from("guests")
+        .update({ invite_received: true, updated_at: new Date().toISOString() })
+        .eq("id", id);
+
+      if (error) {
+        console.error("Admin mark invited error:", error.message);
+        return NextResponse.json({ error: "Failed to update guest" }, { status: 500 });
+      }
+    } else if (action === "toggle_hotel") {
+      const newValue = body.offered_hotel ?? false;
+      const update: Record<string, unknown> = {
+        offered_hotel: newValue,
+        updated_at: new Date().toISOString(),
+      };
+      // Clear acceptance when uninviting
+      if (!newValue) update.accepted_hotel = null;
+
+      const { error } = await supabase
+        .from("guests")
+        .update(update)
+        .eq("id", id);
+
+      if (error) {
+        console.error("Admin toggle hotel error:", error.message);
+        return NextResponse.json({ error: "Failed to update guest" }, { status: 500 });
+      }
+    } else {
+      return NextResponse.json({ error: "Unknown action" }, { status: 400 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Admin mark invited error:", error);
-    return NextResponse.json(
-      { error: "Failed to update guest" },
-      { status: 500 }
-    );
+    console.error("Admin guest PATCH error:", error);
+    return NextResponse.json({ error: "Failed to update guest" }, { status: 500 });
   }
 }

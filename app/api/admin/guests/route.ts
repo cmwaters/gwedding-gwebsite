@@ -22,9 +22,17 @@ export async function GET(request: NextRequest) {
       comments: g.comments ?? "",
       invite_received: g.invite_received ?? false,
       is_attending: g.is_attending,
+      offered_hotel: g.offered_hotel ?? false,
+      accepted_hotel: g.accepted_hotel ?? null,
     }));
 
-    return NextResponse.json(rows);
+    const hotelStats = {
+      offered: rows.filter((r) => r.offered_hotel).length,
+      accepted: rows.filter((r) => r.accepted_hotel === true).length,
+      declined: rows.filter((r) => r.accepted_hotel === false).length,
+    };
+
+    return NextResponse.json({ rows, hotelStats });
   } catch (error) {
     console.error("Admin guests fetch error:", error);
     return NextResponse.json(

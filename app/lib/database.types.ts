@@ -8,6 +8,8 @@ export interface Guest {
   invite_received?: boolean | null;
   email: string | null;
   comments: string | null;
+  offered_hotel: boolean | null;
+  accepted_hotel: boolean | null;
   created_at: string;
   updated_at: string;
 }

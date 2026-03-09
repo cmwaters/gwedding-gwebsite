@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useLanguage } from "@/app/i18n";
+import { useLanguage, TranslationKey } from "@/app/i18n";
 import { useGuests } from "@/app/context/GuestContext";
 import { aggregateGuestNames } from "@/app/lib/guestUtils";
 import Confetti from "../../Confetti";
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
+type HotelState = "idle" | "saving" | "saved" | "error";
 
 export default function RsvpPanel() {
   const { t } = useLanguage();
@@ -28,6 +29,7 @@ function RsvpForm() {
   const { t } = useLanguage();
   const guestGroup = useGuests()!;
   const { guests } = guestGroup;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const groupName = useMemo(() => aggregateGuestNames(guests), [guests]);
 
   // Per-guest attendance: invite_code → boolean | null
@@ -42,6 +44,15 @@ function RsvpForm() {
   const [email, setEmail] = useState(guests[0]?.email ?? "");
   const [comments, setComments] = useState(guests[0]?.comments ?? "");
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
+
+  // Hotel — only relevant if any guest has been offered hotel
+  const offeredHotelGuests = guests.filter((g) => g.offered_hotel);
+  const isOfferedHotel = offeredHotelGuests.length > 0;
+  const existingHotelResponse = guests.find((g) => g.offered_hotel)?.accepted_hotel ?? null;
+  const [hotelAccepted, setHotelAccepted] = useState<boolean | null>(existingHotelResponse);
+  const [hotelState, setHotelState] = useState<HotelState>(
+    existingHotelResponse !== null ? "saved" : "idle"
+  );
 
   const toggleAttendance = (code: string, value: boolean) => {
     setAttendance((prev) => ({ ...prev, [code]: value }));
@@ -78,6 +89,25 @@ function RsvpForm() {
     }
   };
 
+  const handleHotelSubmit = async () => {
+    if (hotelAccepted === null) return;
+    setHotelState("saving");
+    try {
+      const res = await fetch("/api/hotel-rsvp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          invite_codes: offeredHotelGuests.map((g) => g.invite_code),
+          accepted_hotel: hotelAccepted,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      setHotelState("saved");
+    } catch {
+      setHotelState("error");
+    }
+  };
+
   // Success state
   if (submitState === "success") {
     const anyAttending = guests.some((g) => attendance[g.invite_code] === true);
@@ -98,6 +128,18 @@ function RsvpForm() {
           <p className="text-xs sm:text-sm leading-relaxed text-center opacity-80">
             {t("wellMissYou")}
           </p>
+        )}
+
+        {isOfferedHotel && (
+          <div className="mt-6 w-full border-t border-cream/30 pt-5">
+            <HotelSection
+              t={t}
+              hotelAccepted={hotelAccepted}
+              setHotelAccepted={setHotelAccepted}
+              hotelState={hotelState}
+              onSave={handleHotelSubmit}
+            />
+          </div>
         )}
       </div>
     );
@@ -208,6 +250,94 @@ function RsvpForm() {
           </button>
         </div>
       </form>
+
+      {/* Hotel offer — shown below the RSVP form if applicable */}
+      {isOfferedHotel && (
+        <div className="mt-6 border-t border-cream/30 pt-5">
+          <HotelSection
+            t={t}
+            hotelAccepted={hotelAccepted}
+            setHotelAccepted={setHotelAccepted}
+            hotelState={hotelState}
+            onSave={handleHotelSubmit}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HotelSection({
+  t,
+  hotelAccepted,
+  setHotelAccepted,
+  hotelState,
+  onSave,
+}: {
+  t: (key: TranslationKey) => string;
+  hotelAccepted: boolean | null;
+  setHotelAccepted: (v: boolean) => void;
+  hotelState: HotelState;
+  onSave: () => void;
+}) {
+  const hasSelection = hotelAccepted !== null;
+
+  return (
+    <div>
+      <p className="text-amber text-xs sm:text-sm font-bold mb-3">{t("hotelOfferTitle")}</p>
+      <p className="text-cream text-xs sm:text-sm leading-relaxed mb-4 opacity-90">
+        {t("hotelOfferMessage")}
+      </p>
+      <div className="flex gap-3 mb-4">
+        <button
+          type="button"
+          onClick={() => { setHotelAccepted(true); if (hotelState === "saved") return; }}
+          className={`
+            text-xs sm:text-sm px-5 py-2 border-2 min-h-[44px] cursor-pointer transition-colors
+            ${hotelAccepted === true
+              ? "bg-amber text-charcoal border-amber"
+              : "bg-transparent text-cream border-cream/50 hover:bg-amber hover:text-charcoal"}
+          `}
+        >
+          {t("yes")}
+        </button>
+        <button
+          type="button"
+          onClick={() => { setHotelAccepted(false); if (hotelState === "saved") return; }}
+          className={`
+            text-xs sm:text-sm px-5 py-2 border-2 min-h-[44px] cursor-pointer transition-colors
+            ${hotelAccepted === false
+              ? "bg-coral text-charcoal border-coral"
+              : "bg-transparent text-cream border-cream/50 hover:bg-coral hover:text-charcoal"}
+          `}
+        >
+          {t("no")}
+        </button>
+      </div>
+
+      {hotelState === "saved" ? (
+        <p className="text-amber text-xs sm:text-sm">
+          {hotelAccepted ? t("hotelAccepted") : t("hotelDeclined")}
+        </p>
+      ) : (
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={!hasSelection || hotelState === "saving"}
+          className={`
+            text-xs sm:text-sm px-6 py-2 border-2 min-h-[44px] transition-colors
+            ${!hasSelection || hotelState === "saving"
+              ? "border-cream/30 text-cream/30 cursor-not-allowed"
+              : "border-amber text-amber hover:bg-amber hover:text-charcoal cursor-pointer"}
+          `}
+        >
+          {hotelState === "saving" ? t("hotelSaving") : t("hotelSave")}
+        </button>
+      )}
+
+      {hotelState === "error" && (
+        <p className="text-coral text-xs mt-2">{t("rsvpError")}</p>
+      )}
     </div>
   );
 }

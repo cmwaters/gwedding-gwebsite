@@ -262,6 +262,17 @@ export const translations = {
   },
   sendRsvp: { en: "SEND RSVP", es: "ENVIAR CONFIRMACIÓN" },
 
+  // ── Hotel offer ──
+  hotelOfferTitle: { en: "HOTEL", es: "HOTEL" },
+  hotelOfferMessage: {
+    en: "We appreciate the commitment of coming to our big day and would like to offer you 2 nights at Hotel Spiaggia d\u2019Oro during the wedding. Do you accept?",
+    es: "Apreciamos el compromiso de venir a nuestro gran día y nos gustaría ofrecerte 2 noches en el Hotel Spiaggia d\u2019Oro durante la boda. ¿Aceptas?",
+  },
+  hotelAccepted: { en: "Hotel accepted!", es: "¡Hotel aceptado!" },
+  hotelDeclined: { en: "Hotel declined.", es: "Hotel rechazado." },
+  hotelSaving: { en: "SAVING...", es: "GUARDANDO..." },
+  hotelSave: { en: "SAVE", es: "GUARDAR" },
+
   // ── Leaderboard ──
   menuLeaderboard: { en: "Leaderboard", es: "Tabla de Posiciones" },
   panelLeaderboard: { en: "Leaderboard", es: "Tabla de Posiciones" },

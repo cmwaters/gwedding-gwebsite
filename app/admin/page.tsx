@@ -329,7 +329,7 @@ export default function AdminPage() {
                   {showResponseCols && <CopyableCell value={row.comments} className="max-w-[240px]" />}
                   {showHotelActionCol && (
                     <td className="px-3 py-2 border border-cream/30 align-middle">
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-row gap-1">
                         {tab === "to_be_invited" && (
                           <MarkAsInvitedButton
                             guestId={row.id}

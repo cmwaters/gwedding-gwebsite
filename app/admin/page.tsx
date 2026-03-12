@@ -158,6 +158,22 @@ export default function AdminPage() {
     checkAuth();
   };
 
+  const bulkSetHotelAccepted = async (value: boolean) => {
+    setBulkLoading(true);
+    await Promise.all(
+      selectedGuests.map((g) =>
+        fetch(`/api/admin/guests/${g.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "set_hotel_accepted", accepted_hotel: value }),
+        })
+      )
+    );
+    setBulkLoading(false);
+    clearSelection();
+    checkAuth();
+  };
+
   const bulkSetAttending = async (value: boolean) => {
     setBulkLoading(true);
     await Promise.all(
@@ -293,6 +309,19 @@ export default function AdminPage() {
               Offer Hotel
             </button>
           )}
+          {tab === "coming" && (() => {
+            const allAccepted = selectedGuests.every((g) => g.accepted_hotel === true);
+            return (
+              <button
+                type="button"
+                onClick={() => bulkSetHotelAccepted(!allAccepted)}
+                disabled={bulkLoading}
+                className="text-[10px] px-2 py-1 border border-coral text-coral hover:bg-coral hover:text-charcoal transition-colors disabled:opacity-50 whitespace-nowrap shrink-0"
+              >
+                {allAccepted ? "Hotel ✗" : "Hotel ✓"}
+              </button>
+            );
+          })()}
           {tab !== "coming" && (
             <button
               type="button"

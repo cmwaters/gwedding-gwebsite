@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
       is_attending: g.is_attending,
       offered_hotel: g.offered_hotel ?? false,
       accepted_hotel: g.accepted_hotel ?? null,
+      rsvp_by: g.rsvp_by ?? null,
     }));
 
     const hotelStats = {

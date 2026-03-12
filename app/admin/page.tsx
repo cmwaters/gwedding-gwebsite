@@ -14,6 +14,7 @@ interface GuestRow {
   is_attending: boolean | null;
   offered_hotel: boolean;
   accepted_hotel: boolean | null;
+  rsvp_by: string | null;
 }
 
 interface HotelStats {
@@ -207,7 +208,8 @@ export default function AdminPage() {
       g.comments?.toLowerCase().includes(q)
   );
 
-  const showHotelStatus = tab === "coming";
+  const showResponseCols = tab === "coming" || tab === "not_coming";
+  const showRsvpBy = tab === "to_be_invited";
   const displayNames = selectedGuests.map((g) => g.name || g.invite_code);
 
   return (
@@ -303,9 +305,10 @@ export default function AdminPage() {
               <tr className="text-amber border-b border-cream/50">
                 <th className="px-3 py-2 text-left border border-cream/30">invite_code</th>
                 <th className="px-3 py-2 text-left border border-cream/30">name</th>
-                {showHotelStatus && (
-                  <th className="px-3 py-2 text-left border border-cream/30 w-[80px]">hotel</th>
-                )}
+                {showRsvpBy && <th className="px-3 py-2 text-left border border-cream/30 w-[90px]">rsvp_by</th>}
+                {showResponseCols && <th className="px-3 py-2 text-left border border-cream/30">email</th>}
+                {showResponseCols && <th className="px-3 py-2 text-left border border-cream/30 max-w-[240px]">comments</th>}
+                <th className="px-3 py-2 text-left border border-cream/30 w-[70px]">hotel</th>
               </tr>
             </thead>
             <tbody>
@@ -316,9 +319,7 @@ export default function AdminPage() {
                     key={row.id}
                     onClick={() => toggleSelected(row.id)}
                     className={`cursor-pointer transition-colors ${
-                      isSelected
-                        ? "bg-amber/10"
-                        : "hover:bg-cream/5"
+                      isSelected ? "bg-amber/10" : "hover:bg-cream/5"
                     }`}
                   >
                     <td className="px-3 py-2 border border-cream/30 font-mono">
@@ -327,19 +328,34 @@ export default function AdminPage() {
                     <td className="px-3 py-2 border border-cream/30">
                       {row.name || "—"}
                     </td>
-                    {showHotelStatus && (
-                      <td className="px-3 py-2 border border-cream/30 text-center">
-                        {!row.offered_hotel ? (
-                          <span className="text-cream/30 text-[10px]">—</span>
-                        ) : row.accepted_hotel === true ? (
-                          <span className="text-amber text-sm">✓</span>
-                        ) : row.accepted_hotel === false ? (
-                          <span className="text-coral text-sm">✗</span>
-                        ) : (
-                          <span className="text-cream/40 text-[10px]">?</span>
-                        )}
+                    {showRsvpBy && (
+                      <td className="px-3 py-2 border border-cream/30 text-cream/60">
+                        {row.rsvp_by
+                          ? new Date(row.rsvp_by + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                          : <span className="text-cream/30">—</span>}
                       </td>
                     )}
+                    {showResponseCols && (
+                      <td className="px-3 py-2 border border-cream/30 text-cream/70">
+                        {row.email || <span className="text-cream/30">—</span>}
+                      </td>
+                    )}
+                    {showResponseCols && (
+                      <td className="px-3 py-2 border border-cream/30 text-cream/70 max-w-[240px] truncate">
+                        {row.comments || <span className="text-cream/30">—</span>}
+                      </td>
+                    )}
+                    <td className="px-3 py-2 border border-cream/30 text-center">
+                      {!row.offered_hotel ? (
+                        <span className="text-cream/30 text-[10px]">—</span>
+                      ) : row.accepted_hotel === true ? (
+                        <span className="text-amber text-sm">✓</span>
+                      ) : row.accepted_hotel === false ? (
+                        <span className="text-coral text-sm">✗</span>
+                      ) : (
+                        <span className="text-cream/60 text-[10px]">offered</span>
+                      )}
+                    </td>
                   </tr>
                 );
               })}

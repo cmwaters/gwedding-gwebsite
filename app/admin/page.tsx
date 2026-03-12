@@ -158,6 +158,22 @@ export default function AdminPage() {
     checkAuth();
   };
 
+  const bulkSetAttending = async (value: boolean) => {
+    setBulkLoading(true);
+    await Promise.all(
+      selectedGuests.map((g) =>
+        fetch(`/api/admin/guests/${g.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "set_attending", is_attending: value }),
+        })
+      )
+    );
+    setBulkLoading(false);
+    clearSelection();
+    checkAuth();
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-charcoal text-cream flex items-center justify-center">
@@ -275,6 +291,26 @@ export default function AdminPage() {
               className="text-[10px] px-2 py-1 border border-coral text-coral hover:bg-coral hover:text-charcoal transition-colors disabled:opacity-50 whitespace-nowrap shrink-0"
             >
               Offer Hotel
+            </button>
+          )}
+          {tab !== "coming" && (
+            <button
+              type="button"
+              onClick={() => bulkSetAttending(true)}
+              disabled={bulkLoading}
+              className="text-[10px] px-2 py-1 border border-cream/50 text-cream/70 hover:bg-cream/10 transition-colors disabled:opacity-50 whitespace-nowrap shrink-0"
+            >
+              Coming
+            </button>
+          )}
+          {tab !== "not_coming" && (
+            <button
+              type="button"
+              onClick={() => bulkSetAttending(false)}
+              disabled={bulkLoading}
+              className="text-[10px] px-2 py-1 border border-cream/50 text-cream/70 hover:bg-cream/10 transition-colors disabled:opacity-50 whitespace-nowrap shrink-0"
+            >
+              Not Coming
             </button>
           )}
           <button

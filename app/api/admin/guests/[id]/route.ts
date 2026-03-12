@@ -13,7 +13,7 @@ export async function PATCH(
 
   const { id } = await params;
 
-  let body: { action?: string; offered_hotel?: boolean } = {};
+  let body: { action?: string; offered_hotel?: boolean; is_attending?: boolean | null } = {};
   try {
     body = await request.json();
   } catch {
@@ -51,6 +51,16 @@ export async function PATCH(
 
       if (error) {
         console.error("Admin toggle hotel error:", error.message);
+        return NextResponse.json({ error: "Failed to update guest" }, { status: 500 });
+      }
+    } else if (action === "set_attending") {
+      const { error } = await supabase
+        .from("guests")
+        .update({ is_attending: body.is_attending ?? null, updated_at: new Date().toISOString() })
+        .eq("id", id);
+
+      if (error) {
+        console.error("Admin set attending error:", error.message);
         return NextResponse.json({ error: "Failed to update guest" }, { status: 500 });
       }
     } else {

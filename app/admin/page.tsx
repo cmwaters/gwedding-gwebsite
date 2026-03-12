@@ -44,120 +44,6 @@ function filterByTab(guests: GuestRow[], tab: TabId): GuestRow[] {
   }
 }
 
-function MarkAsInvitedButton({
-  guestId,
-  onSuccess,
-}: {
-  guestId: string;
-  onSuccess: () => void;
-}) {
-  const [loading, setLoading] = useState(false);
-
-  const handleClick = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/admin/guests/${guestId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "mark_invited" }),
-      });
-      if (res.ok) onSuccess();
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={loading}
-      className="text-[10px] px-2 py-1 border border-amber text-amber hover:bg-amber hover:text-charcoal transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-    >
-      {loading ? "..." : "Invited"}
-    </button>
-  );
-}
-
-function ToggleHotelButton({
-  guestId,
-  offeredHotel,
-  onSuccess,
-}: {
-  guestId: string;
-  offeredHotel: boolean;
-  onSuccess: () => void;
-}) {
-  const [loading, setLoading] = useState(false);
-
-  const handleClick = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/admin/guests/${guestId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "toggle_hotel", offered_hotel: !offeredHotel }),
-      });
-      if (res.ok) onSuccess();
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={loading}
-      className={`text-[10px] px-2 py-1 border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-        offeredHotel
-          ? "border-coral text-coral hover:bg-coral hover:text-charcoal"
-          : "border-cream/50 text-cream/70 hover:bg-cream/10"
-      }`}
-    >
-      {loading ? "..." : offeredHotel ? "Uninvite Hotel" : "Offer Hotel"}
-    </button>
-  );
-}
-
-function CopyableCell({
-  value,
-  className = "",
-}: {
-  value: string;
-  className?: string;
-}) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    const text = value || "";
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1200);
-    } catch {
-      // fallback ignored for brevity
-    }
-  };
-
-  return (
-    <td
-      onClick={handleCopy}
-      className={`relative px-3 py-2 border border-cream/30 text-left cursor-pointer hover:bg-charcoal-light transition-colors select-none min-w-[80px] max-w-[200px] truncate ${className}`}
-      title={value ? "Click to copy" : ""}
-    >
-      <span className="block truncate" title={value}>
-        {value || "—"}
-      </span>
-      {copied && (
-        <span className="absolute top-0 right-1 text-[10px] text-amber animate-fade-in">
-          Copied!
-        </span>
-      )}
-    </td>
-  );
-}
-
 export default function AdminPage() {
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [password, setPassword] = useState("");
@@ -167,8 +53,8 @@ export default function AdminPage() {
   const [tab, setTab] = useState<TabId>("to_be_invited");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-  const [linkedCodes, setLinkedCodes] = useState<string[]>([]);
-  const [linkCopied, setLinkCopied] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [getLinkCopied, setGetLinkCopied] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
 
   const checkAuth = async () => {
@@ -209,22 +95,31 @@ export default function AdminPage() {
     }
   };
 
-  const toggleLinkedCode = (code: string) => {
-    setLinkedCodes((prev) =>
-      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
-    );
+  const selectedGuests = guests.filter((g) => selectedIds.has(g.id));
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
-  const linkUrl =
-    typeof window !== "undefined" && linkedCodes.length > 0
-      ? `${window.location.origin}/${linkedCodes.join("")}`
-      : "";
+  const clearSelection = () => setSelectedIds(new Set());
 
-  const copyLink = async () => {
+  const handleTabChange = (newTab: TabId) => {
+    setTab(newTab);
+    clearSelection();
+  };
+
+  const getLink = async () => {
+    const codes = selectedGuests.map((g) => g.invite_code).join("");
+    const url = `${window.location.origin}/${codes}`;
     try {
-      await navigator.clipboard.writeText(linkUrl);
-      setLinkCopied(true);
-      setTimeout(() => setLinkCopied(false), 1500);
+      await navigator.clipboard.writeText(url);
+      setGetLinkCopied(true);
+      setTimeout(() => setGetLinkCopied(false), 1500);
     } catch {
       // ignored
     }
@@ -232,9 +127,8 @@ export default function AdminPage() {
 
   const bulkMarkInvited = async () => {
     setBulkLoading(true);
-    const targets = guests.filter((g) => linkedCodes.includes(g.invite_code));
     await Promise.all(
-      targets.map((g) =>
+      selectedGuests.map((g) =>
         fetch(`/api/admin/guests/${g.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -243,14 +137,14 @@ export default function AdminPage() {
       )
     );
     setBulkLoading(false);
+    clearSelection();
     checkAuth();
   };
 
   const bulkOfferHotel = async () => {
     setBulkLoading(true);
-    const targets = guests.filter((g) => linkedCodes.includes(g.invite_code));
     await Promise.all(
-      targets.map((g) =>
+      selectedGuests.map((g) =>
         fetch(`/api/admin/guests/${g.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -259,6 +153,7 @@ export default function AdminPage() {
       )
     );
     setBulkLoading(false);
+    clearSelection();
     checkAuth();
   };
 
@@ -303,17 +198,17 @@ export default function AdminPage() {
   }
 
   const q = search.trim().toLowerCase();
-  const filtered = filterByTab(guests, tab).filter((g) =>
-    !q ||
-    g.name?.toLowerCase().includes(q) ||
-    g.email?.toLowerCase().includes(q) ||
-    g.invite_code?.toLowerCase().includes(q) ||
-    g.comments?.toLowerCase().includes(q)
+  const filtered = filterByTab(guests, tab).filter(
+    (g) =>
+      !q ||
+      g.name?.toLowerCase().includes(q) ||
+      g.email?.toLowerCase().includes(q) ||
+      g.invite_code?.toLowerCase().includes(q) ||
+      g.comments?.toLowerCase().includes(q)
   );
 
-  const showHotelActionButtons = tab === "to_be_invited" || tab === "pending";
-  const showHotelStatusCol = tab === "coming";
-  const showResponseCols = tab === "coming" || tab === "not_coming";
+  const showHotelStatus = tab === "coming";
+  const displayNames = selectedGuests.map((g) => g.name || g.invite_code);
 
   return (
     <div className="h-screen bg-charcoal text-cream p-4 sm:p-6 overflow-y-auto overflow-x-hidden">
@@ -332,7 +227,7 @@ export default function AdminPage() {
         {TABS.map((t) => (
           <button
             key={t.id}
-            onClick={() => setTab(t.id)}
+            onClick={() => handleTabChange(t.id)}
             className={`
               text-xs px-4 py-2 border-2 whitespace-nowrap transition-colors
               ${
@@ -347,56 +242,55 @@ export default function AdminPage() {
         ))}
       </div>
 
-      <div className="flex items-center gap-2 mb-4">
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by name, email, code, comments…"
-          className="retro-input w-full max-w-sm text-xs"
-        />
-        {linkedCodes.length > 0 && (
-          <div className="flex items-center gap-1 flex-1 min-w-0 border border-amber/40 px-2 py-1">
-            <span className="text-[10px] font-mono text-cream/70 truncate flex-1 min-w-0">
-              {linkUrl}
-            </span>
+      <input
+        type="search"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search by name, email, code, comments…"
+        className="retro-input w-full max-w-sm mb-4 text-xs"
+      />
+
+      {selectedGuests.length > 0 && (
+        <div className="flex items-center gap-2 mb-4 px-3 py-2 border border-amber/40 bg-amber/5">
+          <span className="text-xs text-cream flex-1 min-w-0 truncate">
+            {displayNames.join(" · ")}
+          </span>
+          {tab === "to_be_invited" && (
             <button
               type="button"
-              onClick={copyLink}
-              className="text-[10px] px-2 py-0.5 border border-amber text-amber hover:bg-amber hover:text-charcoal transition-colors whitespace-nowrap shrink-0"
+              onClick={bulkMarkInvited}
+              disabled={bulkLoading}
+              className="text-[10px] px-2 py-1 border border-amber text-amber hover:bg-amber hover:text-charcoal transition-colors disabled:opacity-50 whitespace-nowrap shrink-0"
             >
-              {linkCopied ? "Copied!" : "Copy"}
+              Mark Invited
             </button>
-            {tab === "to_be_invited" && (
-              <button
-                type="button"
-                onClick={bulkMarkInvited}
-                disabled={bulkLoading}
-                className="text-[10px] px-2 py-0.5 border border-amber text-amber hover:bg-amber hover:text-charcoal transition-colors disabled:opacity-50 whitespace-nowrap shrink-0"
-              >
-                Mark Invited
-              </button>
-            )}
-            {(tab === "to_be_invited" || tab === "pending") && (
-              <button
-                type="button"
-                onClick={bulkOfferHotel}
-                disabled={bulkLoading}
-                className="text-[10px] px-2 py-0.5 border border-coral text-coral hover:bg-coral hover:text-charcoal transition-colors disabled:opacity-50 whitespace-nowrap shrink-0"
-              >
-                Offer Hotel
-              </button>
-            )}
+          )}
+          {(tab === "to_be_invited" || tab === "pending") && (
             <button
               type="button"
-              onClick={() => setLinkedCodes([])}
-              className="text-[10px] px-2 py-0.5 border border-cream/30 text-cream/50 hover:bg-cream/10 transition-colors whitespace-nowrap shrink-0"
+              onClick={bulkOfferHotel}
+              disabled={bulkLoading}
+              className="text-[10px] px-2 py-1 border border-coral text-coral hover:bg-coral hover:text-charcoal transition-colors disabled:opacity-50 whitespace-nowrap shrink-0"
             >
-              Clear
+              Offer Hotel
             </button>
-          </div>
-        )}
-      </div>
+          )}
+          <button
+            type="button"
+            onClick={getLink}
+            className="text-[10px] px-2 py-1 border border-cream/50 text-cream/70 hover:bg-cream/10 transition-colors whitespace-nowrap shrink-0"
+          >
+            {getLinkCopied ? "Copied!" : "Get Link"}
+          </button>
+          <button
+            type="button"
+            onClick={clearSelection}
+            className="text-[10px] px-2 py-1 border border-cream/30 text-cream/40 hover:bg-cream/10 transition-colors whitespace-nowrap shrink-0"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
 
       <div className="overflow-x-auto">
         {filtered.length === 0 ? (
@@ -409,53 +303,32 @@ export default function AdminPage() {
               <tr className="text-amber border-b border-cream/50">
                 <th className="px-3 py-2 text-left border border-cream/30">invite_code</th>
                 <th className="px-3 py-2 text-left border border-cream/30">name</th>
-                {showResponseCols && <th className="px-3 py-2 text-left border border-cream/30">email</th>}
-                {showResponseCols && <th className="px-3 py-2 text-left border border-cream/30">comments</th>}
-                <th className="px-3 py-2 text-left border border-cream/30 w-[200px]">action</th>
-                {showHotelStatusCol && (
+                {showHotelStatus && (
                   <th className="px-3 py-2 text-left border border-cream/30 w-[80px]">hotel</th>
                 )}
               </tr>
             </thead>
             <tbody>
               {filtered.map((row) => {
-                const isLinked = linkedCodes.includes(row.invite_code);
+                const isSelected = selectedIds.has(row.id);
                 return (
-                  <tr key={row.id} className={isLinked ? "bg-amber/5" : ""}>
-                    <CopyableCell value={row.invite_code} />
-                    <CopyableCell value={row.name} />
-                    {showResponseCols && <CopyableCell value={row.email} />}
-                    {showResponseCols && <CopyableCell value={row.comments} className="max-w-[240px]" />}
-                    <td className="px-3 py-2 border border-cream/30 align-middle">
-                      <div className="flex flex-row gap-1 flex-wrap">
-                        {tab === "to_be_invited" && (
-                          <MarkAsInvitedButton
-                            guestId={row.id}
-                            onSuccess={() => checkAuth()}
-                          />
-                        )}
-                        {showHotelActionButtons && (
-                          <ToggleHotelButton
-                            guestId={row.id}
-                            offeredHotel={row.offered_hotel}
-                            onSuccess={() => checkAuth()}
-                          />
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => toggleLinkedCode(row.invite_code)}
-                          className={`text-[10px] px-2 py-1 border transition-colors ${
-                            isLinked
-                              ? "border-amber bg-amber text-charcoal"
-                              : "border-cream/30 text-cream/50 hover:bg-cream/10"
-                          }`}
-                        >
-                          Get Link
-                        </button>
-                      </div>
+                  <tr
+                    key={row.id}
+                    onClick={() => toggleSelected(row.id)}
+                    className={`cursor-pointer transition-colors ${
+                      isSelected
+                        ? "bg-amber/10"
+                        : "hover:bg-cream/5"
+                    }`}
+                  >
+                    <td className="px-3 py-2 border border-cream/30 font-mono">
+                      {row.invite_code || "—"}
                     </td>
-                    {showHotelStatusCol && (
-                      <td className="px-3 py-2 border border-cream/30 align-middle text-center">
+                    <td className="px-3 py-2 border border-cream/30">
+                      {row.name || "—"}
+                    </td>
+                    {showHotelStatus && (
+                      <td className="px-3 py-2 border border-cream/30 text-center">
                         {!row.offered_hotel ? (
                           <span className="text-cream/30 text-[10px]">—</span>
                         ) : row.accepted_hotel === true ? (

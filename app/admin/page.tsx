@@ -167,6 +167,9 @@ export default function AdminPage() {
   const [tab, setTab] = useState<TabId>("to_be_invited");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [linkedCodes, setLinkedCodes] = useState<string[]>([]);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const checkAuth = async () => {
     const res = await fetch("/api/admin/guests");
@@ -204,6 +207,59 @@ export default function AdminPage() {
     } else {
       setLoginError("Invalid password");
     }
+  };
+
+  const toggleLinkedCode = (code: string) => {
+    setLinkedCodes((prev) =>
+      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
+    );
+  };
+
+  const linkUrl =
+    typeof window !== "undefined" && linkedCodes.length > 0
+      ? `${window.location.origin}/${linkedCodes.join("")}`
+      : "";
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(linkUrl);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 1500);
+    } catch {
+      // ignored
+    }
+  };
+
+  const bulkMarkInvited = async () => {
+    setBulkLoading(true);
+    const targets = guests.filter((g) => linkedCodes.includes(g.invite_code));
+    await Promise.all(
+      targets.map((g) =>
+        fetch(`/api/admin/guests/${g.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "mark_invited" }),
+        })
+      )
+    );
+    setBulkLoading(false);
+    checkAuth();
+  };
+
+  const bulkOfferHotel = async () => {
+    setBulkLoading(true);
+    const targets = guests.filter((g) => linkedCodes.includes(g.invite_code));
+    await Promise.all(
+      targets.map((g) =>
+        fetch(`/api/admin/guests/${g.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "toggle_hotel", offered_hotel: true }),
+        })
+      )
+    );
+    setBulkLoading(false);
+    checkAuth();
   };
 
   if (loading) {
@@ -255,7 +311,7 @@ export default function AdminPage() {
     g.comments?.toLowerCase().includes(q)
   );
 
-  const showHotelActionCol = tab === "to_be_invited" || tab === "pending";
+  const showHotelActionButtons = tab === "to_be_invited" || tab === "pending";
   const showHotelStatusCol = tab === "coming";
   const showResponseCols = tab === "coming" || tab === "not_coming";
 
@@ -291,13 +347,56 @@ export default function AdminPage() {
         ))}
       </div>
 
-      <input
-        type="search"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search by name, email, code, comments…"
-        className="retro-input w-full max-w-sm mb-4 text-xs"
-      />
+      <div className="flex items-center gap-2 mb-4">
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by name, email, code, comments…"
+          className="retro-input w-full max-w-sm text-xs"
+        />
+        {linkedCodes.length > 0 && (
+          <div className="flex items-center gap-1 flex-1 min-w-0 border border-amber/40 px-2 py-1">
+            <span className="text-[10px] font-mono text-cream/70 truncate flex-1 min-w-0">
+              {linkUrl}
+            </span>
+            <button
+              type="button"
+              onClick={copyLink}
+              className="text-[10px] px-2 py-0.5 border border-amber text-amber hover:bg-amber hover:text-charcoal transition-colors whitespace-nowrap shrink-0"
+            >
+              {linkCopied ? "Copied!" : "Copy"}
+            </button>
+            {tab === "to_be_invited" && (
+              <button
+                type="button"
+                onClick={bulkMarkInvited}
+                disabled={bulkLoading}
+                className="text-[10px] px-2 py-0.5 border border-amber text-amber hover:bg-amber hover:text-charcoal transition-colors disabled:opacity-50 whitespace-nowrap shrink-0"
+              >
+                Mark Invited
+              </button>
+            )}
+            {(tab === "to_be_invited" || tab === "pending") && (
+              <button
+                type="button"
+                onClick={bulkOfferHotel}
+                disabled={bulkLoading}
+                className="text-[10px] px-2 py-0.5 border border-coral text-coral hover:bg-coral hover:text-charcoal transition-colors disabled:opacity-50 whitespace-nowrap shrink-0"
+              >
+                Offer Hotel
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setLinkedCodes([])}
+              className="text-[10px] px-2 py-0.5 border border-cream/30 text-cream/50 hover:bg-cream/10 transition-colors whitespace-nowrap shrink-0"
+            >
+              Clear
+            </button>
+          </div>
+        )}
+      </div>
 
       <div className="overflow-x-auto">
         {filtered.length === 0 ? (
@@ -312,53 +411,65 @@ export default function AdminPage() {
                 <th className="px-3 py-2 text-left border border-cream/30">name</th>
                 {showResponseCols && <th className="px-3 py-2 text-left border border-cream/30">email</th>}
                 {showResponseCols && <th className="px-3 py-2 text-left border border-cream/30">comments</th>}
-                {showHotelActionCol && (
-                  <th className="px-3 py-2 text-left border border-cream/30 w-[180px]">action</th>
-                )}
+                <th className="px-3 py-2 text-left border border-cream/30 w-[200px]">action</th>
                 {showHotelStatusCol && (
                   <th className="px-3 py-2 text-left border border-cream/30 w-[80px]">hotel</th>
                 )}
               </tr>
             </thead>
             <tbody>
-              {filtered.map((row) => (
-                <tr key={row.id} className="relative">
-                  <CopyableCell value={row.invite_code} />
-                  <CopyableCell value={row.name} />
-                  {showResponseCols && <CopyableCell value={row.email} />}
-                  {showResponseCols && <CopyableCell value={row.comments} className="max-w-[240px]" />}
-                  {showHotelActionCol && (
+              {filtered.map((row) => {
+                const isLinked = linkedCodes.includes(row.invite_code);
+                return (
+                  <tr key={row.id} className={isLinked ? "bg-amber/5" : ""}>
+                    <CopyableCell value={row.invite_code} />
+                    <CopyableCell value={row.name} />
+                    {showResponseCols && <CopyableCell value={row.email} />}
+                    {showResponseCols && <CopyableCell value={row.comments} className="max-w-[240px]" />}
                     <td className="px-3 py-2 border border-cream/30 align-middle">
-                      <div className="flex flex-row gap-1">
+                      <div className="flex flex-row gap-1 flex-wrap">
                         {tab === "to_be_invited" && (
                           <MarkAsInvitedButton
                             guestId={row.id}
                             onSuccess={() => checkAuth()}
                           />
                         )}
-                        <ToggleHotelButton
-                          guestId={row.id}
-                          offeredHotel={row.offered_hotel}
-                          onSuccess={() => checkAuth()}
-                        />
+                        {showHotelActionButtons && (
+                          <ToggleHotelButton
+                            guestId={row.id}
+                            offeredHotel={row.offered_hotel}
+                            onSuccess={() => checkAuth()}
+                          />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => toggleLinkedCode(row.invite_code)}
+                          className={`text-[10px] px-2 py-1 border transition-colors ${
+                            isLinked
+                              ? "border-amber bg-amber text-charcoal"
+                              : "border-cream/30 text-cream/50 hover:bg-cream/10"
+                          }`}
+                        >
+                          Get Link
+                        </button>
                       </div>
                     </td>
-                  )}
-                  {showHotelStatusCol && (
-                    <td className="px-3 py-2 border border-cream/30 align-middle text-center">
-                      {!row.offered_hotel ? (
-                        <span className="text-cream/30 text-[10px]">—</span>
-                      ) : row.accepted_hotel === true ? (
-                        <span className="text-amber text-sm">✓</span>
-                      ) : row.accepted_hotel === false ? (
-                        <span className="text-coral text-sm">✗</span>
-                      ) : (
-                        <span className="text-cream/40 text-[10px]">?</span>
-                      )}
-                    </td>
-                  )}
-                </tr>
-              ))}
+                    {showHotelStatusCol && (
+                      <td className="px-3 py-2 border border-cream/30 align-middle text-center">
+                        {!row.offered_hotel ? (
+                          <span className="text-cream/30 text-[10px]">—</span>
+                        ) : row.accepted_hotel === true ? (
+                          <span className="text-amber text-sm">✓</span>
+                        ) : row.accepted_hotel === false ? (
+                          <span className="text-coral text-sm">✗</span>
+                        ) : (
+                          <span className="text-cream/40 text-[10px]">?</span>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

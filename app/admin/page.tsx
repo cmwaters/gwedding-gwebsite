@@ -209,7 +209,7 @@ export default function AdminPage() {
   );
 
   const showResponseCols = tab === "coming" || tab === "not_coming";
-  const showRsvpBy = tab === "to_be_invited";
+  const showRsvpBy = tab === "to_be_invited" || tab === "pending";
   const displayNames = selectedGuests.map((g) => g.name || g.invite_code);
 
   return (

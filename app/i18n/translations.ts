@@ -97,8 +97,8 @@ export const translations = {
     es: "APERITIVO DE BIENVENIDA",
   },
   eveningGatheringDetails: {
-    en: "6:00 PM - 9:00 PM @ Villa Isa",
-    es: "6:00 PM - 9:00 PM @ Villa Isa",
+    en: "6:00 PM - 9:00 PM @ Our home (TBD)",
+    es: "6:00 PM - 9:00 PM @ Nuestra casa (TBD)",
   },
   eveningGatheringDesc: {
     en: "Charcuterie board, pizzas & drinks",
@@ -106,8 +106,8 @@ export const translations = {
   },
   ceremony: { en: "CEREMONY", es: "CEREMONIA" },
   ceremonyDetails: {
-    en: "~2:00 PM @ Villa Isa",
-    es: "~2:00 PM @ Villa Isa",
+    en: "~2:00 PM @ Our home",
+    es: "~2:00 PM @ Nuestra casa",
   },
   dinnerAndParty: {
     en: "RECEPTION",

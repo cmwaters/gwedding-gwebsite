@@ -322,7 +322,7 @@ export default function AdminPage() {
                       isSelected ? "bg-amber/10" : "hover:bg-cream/5"
                     }`}
                   >
-                    <td className="px-3 py-2 border border-cream/30 font-mono">
+                    <td className="px-3 py-2 border border-cream/30">
                       {row.invite_code || "—"}
                     </td>
                     <td className="px-3 py-2 border border-cream/30">

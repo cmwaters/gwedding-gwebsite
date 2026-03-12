@@ -154,7 +154,6 @@ export default function AdminPage() {
       )
     );
     setBulkLoading(false);
-    clearSelection();
     checkAuth();
   };
 

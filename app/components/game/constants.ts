@@ -43,7 +43,7 @@ export const GAME_CONFIG: GameConfig = {
   },
   scoring: {
     pointsPerFrame: 0.25,
-    finishScore: 350,
+    finishScore: 250,
   },
   background: {
     scrollSpeed: 0.6, // Multiplier for parallax effect (slower than obstacles)

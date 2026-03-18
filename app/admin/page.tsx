@@ -340,6 +340,69 @@ export default function AdminPage() {
   const showRsvpBy = tab === "to_be_invited" || tab === "pending";
   const displayNames = selectedGuests.map((g) => g.name || g.invite_code);
 
+  const today = new Date().toISOString().split("T")[0];
+  const overdueFiltered = tab === "pending"
+    ? filtered.filter((g) => g.rsvp_by && g.rsvp_by < today)
+    : [];
+  const mainFiltered = tab === "pending"
+    ? filtered.filter((g) => !g.rsvp_by || g.rsvp_by >= today)
+    : filtered;
+
+  const renderRows = (rows: GuestRow[]) => rows.map((row) => {
+    const isSelected = selectedIds.has(row.id);
+    return (
+      <tr
+        key={row.id}
+        onClick={() => toggleSelected(row.id)}
+        className={`cursor-pointer transition-colors ${isSelected ? "bg-amber/10" : "hover:bg-cream/5"}`}
+      >
+        <td className="px-3 py-2 border border-cream/30">{row.invite_code || "—"}</td>
+        <td className="px-3 py-2 border border-cream/30">{row.name || "—"}</td>
+        {showRsvpBy && (
+          <td className="px-3 py-2 border border-cream/30 text-cream/60">
+            {row.rsvp_by
+              ? new Date(row.rsvp_by + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })
+              : <span className="text-cream/30">—</span>}
+          </td>
+        )}
+        {showResponseCols && (
+          <td className="px-3 py-2 border border-cream/30 text-cream/70">
+            {row.email || <span className="text-cream/30">—</span>}
+          </td>
+        )}
+        {showResponseCols && (
+          <td className="px-3 py-2 border border-cream/30 text-cream/70 max-w-[240px] truncate">
+            {row.comments || <span className="text-cream/30">—</span>}
+          </td>
+        )}
+        <td className="px-3 py-2 border border-cream/30 text-center">
+          {!row.offered_hotel ? (
+            <span className="text-cream/30 text-[10px]">—</span>
+          ) : row.accepted_hotel === true ? (
+            <span className="text-amber text-sm">✓</span>
+          ) : row.accepted_hotel === false ? (
+            <span className="text-coral text-sm">✗</span>
+          ) : (
+            <span className="text-cream/60 text-[10px]">offered</span>
+          )}
+        </td>
+      </tr>
+    );
+  });
+
+  const tableHead = (
+    <thead>
+      <tr className="text-amber border-b border-cream/50">
+        <th className="px-3 py-2 text-left border border-cream/30">invite_code</th>
+        <th className="px-3 py-2 text-left border border-cream/30">name</th>
+        {showRsvpBy && <th className="px-3 py-2 text-left border border-cream/30 w-[90px]">rsvp_by</th>}
+        {showResponseCols && <th className="px-3 py-2 text-left border border-cream/30">email</th>}
+        {showResponseCols && <th className="px-3 py-2 text-left border border-cream/30 max-w-[240px]">comments</th>}
+        <th className="px-3 py-2 text-left border border-cream/30 w-[70px]">hotel</th>
+      </tr>
+    </thead>
+  );
+
   return (
     <div className="h-screen bg-charcoal text-cream p-4 sm:p-6 overflow-y-auto overflow-x-hidden">
       <div className="flex items-baseline justify-between mb-4">
@@ -559,71 +622,27 @@ export default function AdminPage() {
 
       <div className="overflow-x-auto">
         {filtered.length === 0 ? (
-          <p className="text-cream/60 text-xs py-6 text-center">
-            No invitees in this tab
-          </p>
+          <p className="text-cream/60 text-xs py-6 text-center">No invitees in this tab</p>
         ) : (
-          <table className="w-full border-collapse text-xs">
-            <thead>
-              <tr className="text-amber border-b border-cream/50">
-                <th className="px-3 py-2 text-left border border-cream/30">invite_code</th>
-                <th className="px-3 py-2 text-left border border-cream/30">name</th>
-                {showRsvpBy && <th className="px-3 py-2 text-left border border-cream/30 w-[90px]">rsvp_by</th>}
-                {showResponseCols && <th className="px-3 py-2 text-left border border-cream/30">email</th>}
-                {showResponseCols && <th className="px-3 py-2 text-left border border-cream/30 max-w-[240px]">comments</th>}
-                <th className="px-3 py-2 text-left border border-cream/30 w-[70px]">hotel</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((row) => {
-                const isSelected = selectedIds.has(row.id);
-                return (
-                  <tr
-                    key={row.id}
-                    onClick={() => toggleSelected(row.id)}
-                    className={`cursor-pointer transition-colors ${
-                      isSelected ? "bg-amber/10" : "hover:bg-cream/5"
-                    }`}
-                  >
-                    <td className="px-3 py-2 border border-cream/30">
-                      {row.invite_code || "—"}
-                    </td>
-                    <td className="px-3 py-2 border border-cream/30">
-                      {row.name || "—"}
-                    </td>
-                    {showRsvpBy && (
-                      <td className="px-3 py-2 border border-cream/30 text-cream/60">
-                        {row.rsvp_by
-                          ? new Date(row.rsvp_by + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })
-                          : <span className="text-cream/30">—</span>}
-                      </td>
-                    )}
-                    {showResponseCols && (
-                      <td className="px-3 py-2 border border-cream/30 text-cream/70">
-                        {row.email || <span className="text-cream/30">—</span>}
-                      </td>
-                    )}
-                    {showResponseCols && (
-                      <td className="px-3 py-2 border border-cream/30 text-cream/70 max-w-[240px] truncate">
-                        {row.comments || <span className="text-cream/30">—</span>}
-                      </td>
-                    )}
-                    <td className="px-3 py-2 border border-cream/30 text-center">
-                      {!row.offered_hotel ? (
-                        <span className="text-cream/30 text-[10px]">—</span>
-                      ) : row.accepted_hotel === true ? (
-                        <span className="text-amber text-sm">✓</span>
-                      ) : row.accepted_hotel === false ? (
-                        <span className="text-coral text-sm">✗</span>
-                      ) : (
-                        <span className="text-cream/60 text-[10px]">offered</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <>
+            {overdueFiltered.length > 0 && (
+              <div className="mb-4">
+                <p className="text-coral text-[10px] uppercase tracking-wide mb-1">
+                  Overdue — needs reminder ({overdueFiltered.length})
+                </p>
+                <table className="w-full border-collapse text-xs border border-coral/30">
+                  {tableHead}
+                  <tbody>{renderRows(overdueFiltered)}</tbody>
+                </table>
+              </div>
+            )}
+            {mainFiltered.length > 0 && (
+              <table className="w-full border-collapse text-xs">
+                {tableHead}
+                <tbody>{renderRows(mainFiltered)}</tbody>
+              </table>
+            )}
+          </>
         )}
       </div>
     </div>

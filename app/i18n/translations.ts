@@ -170,12 +170,12 @@ export const translations = {
   dressCodeAperitivoTitle: { en: "Aperitivo Night", es: "Noche de Aperitivo" },
   dressCodeAperitivoDesc: {
     en: "Italian casual. Come comfortable and relaxed — dresses, shirts, trousers, or similar. Evenings by the lake can be cool, so bringing a light layer is a good idea.",
-    es: "Casual italiano. Ven cómodo y relajado — vestidos, camisas, pantalones o similar. Las noches junto al lago pueden ser frescas, así que una capa ligera es buena idea.",
+    es: "Casual italiano. Ven cómodo y relajado — vestidos, camisas, pantalones o similar. Las noches junto al lago pueden ser frescas, así que un abrigo ligero es buena idea.",
   },
   dressCodeWeddingTitle: { en: "Wedding Day", es: "Día de la Boda" },
   dressCodeWeddingDesc: {
     en: "Formal, but most importantly comfortable. Wear whatever makes you feel good celebrating with us. Layers for the evening are recommended.",
-    es: "Formal, pero sobre todo cómodo. Viste lo que te haga sentir bien celebrando con nosotros. Se recomiendan capas para la noche.",
+    es: "Formal, pero sobre todo cómodo. Viste lo que te haga sentir bien celebrando con nosotros. Se recomienda abrigo para la noche.",
   },
   gifts: { en: "GIFTS", es: "REGALOS" },
   stillHaveQuestions: {

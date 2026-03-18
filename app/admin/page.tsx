@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 type TabId = "to_be_invited" | "pending" | "coming" | "not_coming";
 
@@ -57,6 +57,12 @@ export default function AdminPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [getLinkCopied, setGetLinkCopied] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editRsvpBy, setEditRsvpBy] = useState("");
+  const [nameSaved, setNameSaved] = useState(false);
+  const [rsvpBySaved, setRsvpBySaved] = useState(false);
+  const nameSavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rsvpBySavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const checkAuth = async () => {
     const res = await fetch("/api/admin/guests");
@@ -74,6 +80,19 @@ export default function AdminPage() {
   useEffect(() => {
     checkAuth();
   }, []);
+
+  useEffect(() => {
+    const sg = guests.filter((g) => selectedIds.has(g.id));
+    if (sg.length === 1) {
+      setEditName(sg[0].name ?? "");
+      setEditRsvpBy(sg[0].rsvp_by ?? "");
+    } else {
+      setEditName("");
+      setEditRsvpBy("");
+    }
+    setNameSaved(false);
+    setRsvpBySaved(false);
+  }, [selectedIds, guests]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,6 +208,55 @@ export default function AdminPage() {
     checkAuth();
   };
 
+  const bulkRescindHotel = async () => {
+    setBulkLoading(true);
+    await Promise.all(
+      selectedGuests.map((g) =>
+        fetch(`/api/admin/guests/${g.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "toggle_hotel", offered_hotel: false }),
+        })
+      )
+    );
+    setBulkLoading(false);
+    checkAuth();
+  };
+
+  const saveName = async () => {
+    if (selectedGuests.length !== 1 || !editName.trim()) return;
+    setBulkLoading(true);
+    await fetch(`/api/admin/guests/${selectedGuests[0].id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "update_name", name: editName.trim() }),
+    });
+    setBulkLoading(false);
+    if (nameSavedTimer.current) clearTimeout(nameSavedTimer.current);
+    setNameSaved(true);
+    nameSavedTimer.current = setTimeout(() => setNameSaved(false), 1500);
+    checkAuth();
+  };
+
+  const saveRsvpBy = async () => {
+    if (!selectedGuests.length) return;
+    setBulkLoading(true);
+    await Promise.all(
+      selectedGuests.map((g) =>
+        fetch(`/api/admin/guests/${g.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "update_rsvp_by", rsvp_by: editRsvpBy || null }),
+        })
+      )
+    );
+    setBulkLoading(false);
+    if (rsvpBySavedTimer.current) clearTimeout(rsvpBySavedTimer.current);
+    setRsvpBySaved(true);
+    rsvpBySavedTimer.current = setTimeout(() => setRsvpBySaved(false), 1500);
+    checkAuth();
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-charcoal text-cream flex items-center justify-center">
@@ -284,7 +352,8 @@ export default function AdminPage() {
       />
 
       {selectedGuests.length > 0 && (
-        <div className="flex items-center gap-2 mb-4 px-3 py-2 border border-amber/40 bg-amber/5">
+        <>
+        <div className="flex items-center gap-2 px-3 py-2 border border-amber/40 bg-amber/5">
           <span className="text-xs text-cream flex-1 min-w-0 truncate">
             {displayNames.join(" · ")}
           </span>
@@ -356,6 +425,70 @@ export default function AdminPage() {
             Cancel
           </button>
         </div>
+
+        {/* Row 2: edit fields */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2 border-x border-b border-amber/40 bg-amber/5 mb-4">
+          {selectedGuests.length === 1 && (
+            <div className="flex items-center gap-1">
+              <label className="text-[10px] text-amber whitespace-nowrap">Name</label>
+              <input
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && saveName()}
+                disabled={bulkLoading}
+                className="retro-input text-[10px] py-0.5 px-2 w-32"
+              />
+              <button
+                type="button"
+                onClick={saveName}
+                disabled={bulkLoading || !editName.trim()}
+                className="text-[10px] px-2 py-1 border border-amber text-amber hover:bg-amber hover:text-charcoal transition-colors disabled:opacity-40 whitespace-nowrap"
+              >
+                {nameSaved ? "Saved!" : "Save"}
+              </button>
+            </div>
+          )}
+
+          <div className="flex items-center gap-1">
+            <label className="text-[10px] text-amber whitespace-nowrap">RSVP By</label>
+            <input
+              type="date"
+              value={editRsvpBy}
+              onChange={(e) => setEditRsvpBy(e.target.value)}
+              disabled={bulkLoading}
+              className="retro-input text-[10px] py-0.5 px-2"
+            />
+            <button
+              type="button"
+              onClick={saveRsvpBy}
+              disabled={bulkLoading}
+              className="text-[10px] px-2 py-1 border border-amber text-amber hover:bg-amber hover:text-charcoal transition-colors disabled:opacity-40 whitespace-nowrap"
+            >
+              {rsvpBySaved ? "Saved!" : "Save"}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={bulkOfferHotel}
+              disabled={bulkLoading}
+              className="text-[10px] px-2 py-1 border border-coral text-coral hover:bg-coral hover:text-charcoal transition-colors disabled:opacity-40 whitespace-nowrap"
+            >
+              Offer Hotel
+            </button>
+            <button
+              type="button"
+              onClick={bulkRescindHotel}
+              disabled={bulkLoading}
+              className="text-[10px] px-2 py-1 border border-cream/50 text-cream/70 hover:bg-cream/10 transition-colors disabled:opacity-40 whitespace-nowrap"
+            >
+              Rescind Hotel
+            </button>
+          </div>
+        </div>
+        </>
       )}
 
       <div className="overflow-x-auto">

@@ -103,3 +103,28 @@ export async function PATCH(
     return NextResponse.json({ error: "Failed to update guest" }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const cookie = getAdminAuthCookie(request.headers.get("cookie"));
+  if (!cookie || !verifyAdminToken(cookie)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+
+  try {
+    const supabase = createServerClient();
+    const { error } = await supabase.from("guests").delete().eq("id", id);
+    if (error) {
+      console.error("Admin delete guest error:", error.message);
+      return NextResponse.json({ error: "Failed to delete guest" }, { status: 500 });
+    }
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Admin guest DELETE error:", error);
+    return NextResponse.json({ error: "Failed to delete guest" }, { status: 500 });
+  }
+}

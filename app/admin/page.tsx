@@ -63,6 +63,8 @@ export default function AdminPage() {
   const [rsvpBySaved, setRsvpBySaved] = useState(false);
   const nameSavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rsvpBySavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [addName, setAddName] = useState("");
+  const [addLoading, setAddLoading] = useState(false);
 
   const checkAuth = async () => {
     const res = await fetch("/api/admin/guests");
@@ -257,6 +259,33 @@ export default function AdminPage() {
     checkAuth();
   };
 
+  const removeSelected = async () => {
+    if (!selectedGuests.length) return;
+    setBulkLoading(true);
+    await Promise.all(
+      selectedGuests.map((g) =>
+        fetch(`/api/admin/guests/${g.id}`, { method: "DELETE" })
+      )
+    );
+    setBulkLoading(false);
+    clearSelection();
+    checkAuth();
+  };
+
+  const addGuest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addName.trim()) return;
+    setAddLoading(true);
+    await fetch("/api/admin/guests", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: addName.trim() }),
+    });
+    setAddLoading(false);
+    setAddName("");
+    checkAuth();
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-charcoal text-cream flex items-center justify-center">
@@ -417,6 +446,16 @@ export default function AdminPage() {
           >
             {getLinkCopied ? "Copied!" : "Get Link"}
           </button>
+          {tab === "to_be_invited" && (
+            <button
+              type="button"
+              onClick={removeSelected}
+              disabled={bulkLoading}
+              className="text-[10px] px-2 py-1 border border-coral text-coral hover:bg-coral hover:text-charcoal transition-colors disabled:opacity-50 whitespace-nowrap shrink-0"
+            >
+              Remove
+            </button>
+          )}
           <button
             type="button"
             onClick={clearSelection}
@@ -489,6 +528,26 @@ export default function AdminPage() {
           </div>
         </div>
         </>
+      )}
+
+      {tab === "to_be_invited" && (
+        <form onSubmit={addGuest} className="flex items-center gap-2 mb-4">
+          <input
+            type="text"
+            value={addName}
+            onChange={(e) => setAddName(e.target.value)}
+            placeholder="Name"
+            disabled={addLoading}
+            className="retro-input text-xs py-1 px-2 w-48"
+          />
+          <button
+            type="submit"
+            disabled={addLoading || !addName.trim()}
+            className="text-[10px] px-3 py-1 border border-amber text-amber hover:bg-amber hover:text-charcoal transition-colors disabled:opacity-40 whitespace-nowrap min-h-[32px]"
+          >
+            {addLoading ? "Adding…" : "+ Add Invitee"}
+          </button>
+        </form>
       )}
 
       <div className="overflow-x-auto">

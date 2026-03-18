@@ -507,6 +507,13 @@ export default function AdminPage() {
             </div>
           )}
 
+          {selectedGuests.length === 1 && showResponseCols && selectedGuests[0].comments && (
+            <div className="flex items-start gap-1 w-full">
+              <label className="text-[10px] text-amber whitespace-nowrap pt-0.5">Comment</label>
+              <p className="text-[10px] text-cream/80 leading-relaxed">{selectedGuests[0].comments}</p>
+            </div>
+          )}
+
           <div className="flex items-center gap-1">
             <label className="text-[10px] text-amber whitespace-nowrap">RSVP By</label>
             <input

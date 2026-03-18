@@ -396,16 +396,34 @@ export default function AdminPage() {
               Mark Invited
             </button>
           )}
-          {(tab === "to_be_invited" || tab === "pending") && (
-            <button
-              type="button"
-              onClick={bulkOfferHotel}
-              disabled={bulkLoading}
-              className="text-[10px] px-2 py-1 border border-coral text-coral hover:bg-coral hover:text-charcoal transition-colors disabled:opacity-50 whitespace-nowrap shrink-0"
-            >
-              Offer Hotel
-            </button>
-          )}
+          {(() => {
+            const allOffered = selectedGuests.every((g) => g.offered_hotel);
+            const noneOffered = selectedGuests.every((g) => !g.offered_hotel);
+            return (
+              <>
+                {!allOffered && (
+                  <button
+                    type="button"
+                    onClick={bulkOfferHotel}
+                    disabled={bulkLoading}
+                    className="text-[10px] px-2 py-1 border border-coral text-coral hover:bg-coral hover:text-charcoal transition-colors disabled:opacity-50 whitespace-nowrap shrink-0"
+                  >
+                    Offer Hotel
+                  </button>
+                )}
+                {!noneOffered && (
+                  <button
+                    type="button"
+                    onClick={bulkRescindHotel}
+                    disabled={bulkLoading}
+                    className="text-[10px] px-2 py-1 border border-cream/50 text-cream/70 hover:bg-cream/10 transition-colors disabled:opacity-50 whitespace-nowrap shrink-0"
+                  >
+                    Rescind Hotel
+                  </button>
+                )}
+              </>
+            );
+          })()}
           {tab === "coming" && (() => {
             const allAccepted = selectedGuests.every((g) => g.accepted_hotel === true);
             return (
@@ -508,24 +526,6 @@ export default function AdminPage() {
             </button>
           </div>
 
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={bulkOfferHotel}
-              disabled={bulkLoading}
-              className="text-[10px] px-2 py-1 border border-coral text-coral hover:bg-coral hover:text-charcoal transition-colors disabled:opacity-40 whitespace-nowrap"
-            >
-              Offer Hotel
-            </button>
-            <button
-              type="button"
-              onClick={bulkRescindHotel}
-              disabled={bulkLoading}
-              className="text-[10px] px-2 py-1 border border-cream/50 text-cream/70 hover:bg-cream/10 transition-colors disabled:opacity-40 whitespace-nowrap"
-            >
-              Rescind Hotel
-            </button>
-          </div>
         </div>
         </>
       )}

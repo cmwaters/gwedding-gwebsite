@@ -58,7 +58,8 @@ export default function AdminPage() {
   const [getLinkCopied, setGetLinkCopied] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [editName, setEditName] = useState("");
-  const [editRsvpBy, setEditRsvpBy] = useState("");
+  const [editRsvpMonth, setEditRsvpMonth] = useState("");
+  const [editRsvpDay, setEditRsvpDay] = useState("");
   const [nameSaved, setNameSaved] = useState(false);
   const [rsvpBySaved, setRsvpBySaved] = useState(false);
   const nameSavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -87,10 +88,18 @@ export default function AdminPage() {
     const sg = guests.filter((g) => selectedIds.has(g.id));
     if (sg.length === 1) {
       setEditName(sg[0].name ?? "");
-      setEditRsvpBy(sg[0].rsvp_by ?? "");
+      if (sg[0].rsvp_by) {
+        const [, m, d] = sg[0].rsvp_by.split("-");
+        setEditRsvpMonth(String(parseInt(m)));
+        setEditRsvpDay(String(parseInt(d)));
+      } else {
+        setEditRsvpMonth("");
+        setEditRsvpDay("");
+      }
     } else {
       setEditName("");
-      setEditRsvpBy("");
+      setEditRsvpMonth("");
+      setEditRsvpDay("");
     }
     setNameSaved(false);
     setRsvpBySaved(false);
@@ -242,13 +251,16 @@ export default function AdminPage() {
 
   const saveRsvpBy = async () => {
     if (!selectedGuests.length) return;
+    const rsvp_by = editRsvpMonth && editRsvpDay
+      ? `2026-${editRsvpMonth.padStart(2, "0")}-${editRsvpDay.padStart(2, "0")}`
+      : null;
     setBulkLoading(true);
     await Promise.all(
       selectedGuests.map((g) =>
         fetch(`/api/admin/guests/${g.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "update_rsvp_by", rsvp_by: editRsvpBy || null }),
+          body: JSON.stringify({ action: "update_rsvp_by", rsvp_by }),
         })
       )
     );
@@ -580,11 +592,24 @@ export default function AdminPage() {
           <div className="flex items-center gap-1">
             <label className="text-[10px] text-amber whitespace-nowrap">RSVP By</label>
             <input
-              type="date"
-              value={editRsvpBy}
-              onChange={(e) => setEditRsvpBy(e.target.value)}
+              type="number"
+              min={1}
+              max={12}
+              value={editRsvpMonth}
+              onChange={(e) => setEditRsvpMonth(e.target.value)}
               disabled={bulkLoading}
-              className="retro-input text-[10px] py-0.5 px-2"
+              placeholder="MM"
+              className="retro-input text-[10px] py-0.5 px-2 w-12"
+            />
+            <input
+              type="number"
+              min={1}
+              max={31}
+              value={editRsvpDay}
+              onChange={(e) => setEditRsvpDay(e.target.value)}
+              disabled={bulkLoading}
+              placeholder="DD"
+              className="retro-input text-[10px] py-0.5 px-2 w-12"
             />
             <button
               type="button"

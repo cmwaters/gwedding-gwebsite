@@ -65,7 +65,10 @@ export default function AdminPage() {
   const nameSavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rsvpBySavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [addName, setAddName] = useState("");
+  const [addRsvpMonth, setAddRsvpMonth] = useState("");
+  const [addRsvpDay, setAddRsvpDay] = useState("");
   const [addLoading, setAddLoading] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   const checkAuth = async () => {
     const res = await fetch("/api/admin/guests");
@@ -288,13 +291,19 @@ export default function AdminPage() {
     e.preventDefault();
     if (!addName.trim()) return;
     setAddLoading(true);
+    const rsvp_by = addRsvpMonth && addRsvpDay
+      ? `2026-${addRsvpMonth.padStart(2, "0")}-${addRsvpDay.padStart(2, "0")}`
+      : null;
     await fetch("/api/admin/guests", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: addName.trim() }),
+      body: JSON.stringify({ name: addName.trim(), rsvp_by }),
     });
     setAddLoading(false);
     setAddName("");
+    setAddRsvpMonth("");
+    setAddRsvpDay("");
+    setShowAddForm(false);
     checkAuth();
   };
 
@@ -626,23 +635,66 @@ export default function AdminPage() {
       )}
 
       {tab === "to_be_invited" && (
-        <form onSubmit={addGuest} className="flex items-center gap-2 mb-4">
-          <input
-            type="text"
-            value={addName}
-            onChange={(e) => setAddName(e.target.value)}
-            placeholder="Name"
-            disabled={addLoading}
-            className="retro-input text-xs py-1 px-2 w-48"
-          />
-          <button
-            type="submit"
-            disabled={addLoading || !addName.trim()}
-            className="text-[10px] px-3 py-1 border border-amber text-amber hover:bg-amber hover:text-charcoal transition-colors disabled:opacity-40 whitespace-nowrap min-h-[32px]"
-          >
-            {addLoading ? "Adding…" : "+ Add Invitee"}
-          </button>
-        </form>
+        <div className="mb-4">
+          {!showAddForm ? (
+            <button
+              type="button"
+              onClick={() => setShowAddForm(true)}
+              className="text-[10px] px-3 py-1 border border-amber text-amber hover:bg-amber hover:text-charcoal transition-colors whitespace-nowrap"
+            >
+              + Add Invitee
+            </button>
+          ) : (
+            <form onSubmit={addGuest} className="flex flex-wrap items-center gap-2 px-3 py-2 border border-amber/40 bg-amber/5">
+              <input
+                type="text"
+                value={addName}
+                onChange={(e) => setAddName(e.target.value)}
+                placeholder="Name"
+                disabled={addLoading}
+                autoFocus
+                className="retro-input text-xs py-1 px-2 w-40"
+              />
+              <div className="flex items-center gap-1">
+                <label className="text-[10px] text-amber whitespace-nowrap">RSVP By</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={12}
+                  value={addRsvpMonth}
+                  onChange={(e) => setAddRsvpMonth(e.target.value)}
+                  disabled={addLoading}
+                  placeholder="MM"
+                  className="retro-input text-[10px] py-1 px-2 w-12"
+                />
+                <input
+                  type="number"
+                  min={1}
+                  max={31}
+                  value={addRsvpDay}
+                  onChange={(e) => setAddRsvpDay(e.target.value)}
+                  disabled={addLoading}
+                  placeholder="DD"
+                  className="retro-input text-[10px] py-1 px-2 w-12"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={addLoading || !addName.trim()}
+                className="text-[10px] px-3 py-1 border border-amber text-amber hover:bg-amber hover:text-charcoal transition-colors disabled:opacity-40 whitespace-nowrap"
+              >
+                {addLoading ? "Adding…" : "Add"}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowAddForm(false); setAddName(""); setAddRsvpMonth(""); setAddRsvpDay(""); }}
+                className="text-[10px] px-2 py-1 border border-cream/30 text-cream/40 hover:bg-cream/10 transition-colors whitespace-nowrap"
+              >
+                Cancel
+              </button>
+            </form>
+          )}
+        </div>
       )}
 
       <div className="overflow-x-auto">

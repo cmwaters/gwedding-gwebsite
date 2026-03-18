@@ -265,8 +265,8 @@ export const translations = {
   // ── Hotel offer ──
   hotelOfferTitle: { en: "HOTEL", es: "HOTEL" },
   hotelOfferMessage: {
-    en: "We appreciate the commitment of coming to our big day and would like to offer you 2 nights at Hotel Spiaggia d\u2019Oro during the wedding. Do you accept?",
-    es: "Apreciamos el compromiso de venir a nuestro gran día y nos gustaría ofrecerte 2 noches en el Hotel Spiaggia d\u2019Oro durante la boda. ¿Aceptas?",
+    en: "We appreciate the commitment of coming to our big day and would like to offer you accommodation on the nights of the 26th and 27th. Do you accept?",
+    es: "Apreciamos el compromiso de venir a nuestro gran día y nos gustaría ofrecerte alojamiento las noches del 26 y 27. ¿Aceptas?",
   },
   hotelAccepted: { en: "Hotel accepted!", es: "¡Hotel aceptado!" },
   hotelDeclined: { en: "Hotel declined.", es: "Hotel rechazado." },

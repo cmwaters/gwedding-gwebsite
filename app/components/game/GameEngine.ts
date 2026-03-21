@@ -30,6 +30,8 @@ export class GameEngine {
   private currentSpawnInterval: number; // Current max spawn interval
   private doubleSpawnTimer: number = 0; // Countdown for delayed second ball
   private lastSpawnedType: ObstacleType | null = null;
+  private activeSpeedIncrement: number = GAME_CONFIG.obstacles.speedIncrement;
+  private activeIntervalDecrement: number = GAME_CONFIG.obstacles.intervalDecrement;
 
   // FPS tracking
   private fps: number = 60;
@@ -161,12 +163,12 @@ export class GameEngine {
   }
 
   private getRandomSpawnTime(): number {
-    // Use current spawn interval +/- 400ms randomness
+    // Use current spawn interval +/- 400ms randomness, floored by the mode's minimum
+    const minInterval = this.endless
+      ? GAME_CONFIG.obstacles.endlessMinSpawnInterval
+      : GAME_CONFIG.obstacles.minSpawnInterval;
     const randomness = (Math.random() - 0.5) * 800; // Random value between -400 and +400
-    return Math.max(
-      GAME_CONFIG.obstacles.minSpawnInterval,
-      this.currentSpawnInterval + randomness
-    );
+    return Math.max(minInterval, this.currentSpawnInterval + randomness);
   }
 
   private setupInputListeners(): void {
@@ -217,7 +219,10 @@ export class GameEngine {
   }
 
   /** Called externally by React to start/restart the game */
-  public startGame(mode: "normal" | "endless" = "normal"): void {
+  public startGame(
+    mode: "normal" | "endless" = "normal",
+    difficulty?: { speedIncrement?: number; intervalDecrement?: number }
+  ): void {
     this.resetState();
     this.endless = mode === "endless";
     this.gameState = "playing";
@@ -225,6 +230,9 @@ export class GameEngine {
     this.currentSpawnInterval = GAME_CONFIG.obstacles.maxSpawnInterval;
     this.obstacleTimer = 0;
     this.nextObstacleTime = this.getRandomSpawnTime();
+    // Apply difficulty overrides (used in endless mode to calibrate against leaderboard)
+    this.activeSpeedIncrement = difficulty?.speedIncrement ?? GAME_CONFIG.obstacles.speedIncrement;
+    this.activeIntervalDecrement = difficulty?.intervalDecrement ?? GAME_CONFIG.obstacles.intervalDecrement;
   }
 
   /** Called externally by React to return to idle (e.g. when showing menu) */
@@ -353,7 +361,7 @@ export class GameEngine {
       : GAME_CONFIG.obstacles.minSpawnInterval;
     this.currentSpawnInterval = Math.max(
       minInterval,
-      this.currentSpawnInterval - GAME_CONFIG.obstacles.intervalDecrement * normalizedDelta
+      this.currentSpawnInterval - this.activeIntervalDecrement * normalizedDelta
     );
 
     // Increase speed over time (frame independent)
@@ -362,7 +370,7 @@ export class GameEngine {
       : (this.isMobile ? GAME_CONFIG.mobile.maxSpeed : GAME_CONFIG.obstacles.maxSpeed);
     this.currentSpeed = Math.min(
       maxSpeed,
-      this.currentSpeed + GAME_CONFIG.obstacles.speedIncrement * normalizedDelta
+      this.currentSpeed + this.activeSpeedIncrement * normalizedDelta
     );
 
     // Update score (frame independent)

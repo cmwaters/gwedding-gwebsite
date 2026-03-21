@@ -3,9 +3,14 @@
 import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from "react";
 import { GameEngine } from "./GameEngine";
 
+export interface DifficultyConfig {
+  speedIncrement: number;
+  intervalDecrement: number;
+}
+
 export interface GameCanvasHandle {
   startGame: () => void;
-  startEndless: () => void;
+  startEndless: (difficulty?: DifficultyConfig) => void;
   returnToIdle: () => void;
 }
 
@@ -25,8 +30,8 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(
       startGame: () => {
         gameRef.current?.startGame("normal");
       },
-      startEndless: () => {
-        gameRef.current?.startGame("endless");
+      startEndless: (difficulty?: DifficultyConfig) => {
+        gameRef.current?.startGame("endless", difficulty);
       },
       returnToIdle: () => {
         gameRef.current?.returnToIdle();

@@ -7,7 +7,7 @@ import { useGuests } from "../context/GuestContext";
 import { aggregateGuestNames } from "../lib/guestUtils";
 import RetroMenu from "./menu/RetroMenu";
 import GameSubmenu, { GameResult } from "./menu/GameSubmenu";
-import GameCanvas, { GameCanvasHandle } from "./game/GameCanvas";
+import GameCanvas, { GameCanvasHandle, DifficultyConfig } from "./game/GameCanvas";
 import RetroPanel from "./menu/RetroPanel";
 import SchedulePanel from "./menu/panels/SchedulePanel";
 import TravelPanel from "./menu/panels/TravelPanel";
@@ -113,9 +113,46 @@ export default function HomeContent() {
     setGameResult(null);
     setPlayerRank(null);
     setPlayerHighScore(null);
-    gameRef.current?.startEndless();
     setScreen("playing");
-  }, []);
+
+    // Fetch leaderboard to calibrate difficulty: max difficulty reached at 70% of the
+    // top competitor's score (excluding current player if they hold #1).
+    const startWithCalibration = async () => {
+      let difficulty: DifficultyConfig | undefined;
+      try {
+        const res = await fetch("/api/leaderboard");
+        const data = await res.json();
+        const scores: { name: string; score: number }[] = data.scores ?? [];
+
+        // Find the reference score — top score excluding self if at #1
+        let refScore: number | null = null;
+        if (scores.length > 0) {
+          if (scores[0].name === groupName && scores.length > 1) {
+            refScore = scores[1].score; // Current player is #1 — use #2
+          } else if (scores[0].name !== groupName) {
+            refScore = scores[0].score;
+          }
+        }
+
+        if (refScore !== null && refScore > 0) {
+          // Target: reach max difficulty at 70% of the reference score
+          // Score accrues at 0.25 pts/frame, so frames = score / 0.25
+          // speedIncrement  = (maxSpeed - startSpeed) / frames = 14 * 0.25 / targetScore = 3.5 / targetScore
+          // intervalDecrement = (2000 - 600) / frames            = 1400 * 0.25 / targetScore = 350 / targetScore
+          const targetScore = Math.max(200, refScore * 0.7);
+          difficulty = {
+            speedIncrement: 3.5 / targetScore,
+            intervalDecrement: 350 / targetScore,
+          };
+        }
+      } catch (err) {
+        console.error("Difficulty calibration fetch failed:", err);
+      }
+      gameRef.current?.startEndless(difficulty);
+    };
+
+    startWithCalibration();
+  }, [groupName]);
 
   const handleBackToMenu = useCallback(() => {
     isEndlessRef.current = false;

@@ -30,7 +30,7 @@ export const GAME_CONFIG: GameConfig = {
     speedIncrement: 0.01, 
     intervalDecrement: 1, // How much to decrease spawn interval per second
     ballRadius: 14, // Soccer ball radius
-    endlessMinSpawnInterval: 600, // Tighter minimum for endless mode
+    endlessMinSpawnInterval: 500, // Tighter minimum for endless mode
     endlessMaxSpeed: 22, // Faster cap for endless mode
     lowArc: {
       peakHeight: 50, // Low bounce - dog must jump over

@@ -21,6 +21,8 @@ export default function HomeContent() {
   const [screen, setScreen] = useState<Screen>("menu");
   const [gameResult, setGameResult] = useState<GameResult | null>(null);
   const [hasBeatenVilla, setHasBeatenVilla] = useState(false);
+  const [playerRank, setPlayerRank] = useState<number | null>(null);
+  const [playerHighScore, setPlayerHighScore] = useState<number | null>(null);
   const isEndlessRef = useRef(false);
   const gameRef = useRef<GameCanvasHandle>(null);
 
@@ -51,13 +53,26 @@ export default function HomeContent() {
     (result: "gameover" | "won", score: number, finishScore: number) => {
       const submitted = groupName !== null && score > 0;
 
-      // Submit score to leaderboard (fire-and-forget)
+      // Submit score then fetch updated leaderboard to show rank
       if (submitted) {
+        setPlayerRank(null);
+        setPlayerHighScore(null);
         fetch("/api/leaderboard", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name: groupName, score }),
-        }).catch((err) => console.error("Score submit failed:", err));
+        })
+          .then(() => fetch("/api/leaderboard"))
+          .then((r) => r.json())
+          .then((data) => {
+            const scores: { name: string; score: number }[] = data.scores ?? [];
+            const idx = scores.findIndex((e) => e.name === groupName);
+            if (idx !== -1) {
+              setPlayerRank(idx + 1);
+              setPlayerHighScore(scores[idx].score);
+            }
+          })
+          .catch((err) => console.error("Score submit/rank fetch failed:", err));
       }
 
       // Calculate progress percentage for normal mode
@@ -87,6 +102,8 @@ export default function HomeContent() {
   const handleStartNormal = useCallback(() => {
     isEndlessRef.current = false;
     setGameResult(null);
+    setPlayerRank(null);
+    setPlayerHighScore(null);
     gameRef.current?.startGame();
     setScreen("playing");
   }, []);
@@ -94,6 +111,8 @@ export default function HomeContent() {
   const handleStartEndless = useCallback(() => {
     isEndlessRef.current = true;
     setGameResult(null);
+    setPlayerRank(null);
+    setPlayerHighScore(null);
     gameRef.current?.startEndless();
     setScreen("playing");
   }, []);
@@ -144,6 +163,8 @@ export default function HomeContent() {
         <GameSubmenu
           gameResult={gameResult}
           hasBeatenVilla={hasBeatenVilla}
+          playerRank={playerRank}
+          playerHighScore={playerHighScore}
           onStartNormal={handleStartNormal}
           onStartEndless={handleStartEndless}
           onMenu={handleBackToMenu}

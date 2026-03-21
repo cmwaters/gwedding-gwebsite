@@ -290,8 +290,10 @@ export const translations = {
   },
   leaderboardYou: { en: "(you)", es: "(tú)" },
 
-  // ── Score Submitted ──
-  scoreSubmitted: { en: "Score submitted!", es: "¡Puntos enviados!" },
+  // ── Score / Rank ──
+  yourHighScore: { en: "High score", es: "Mejor marca" },
+  currentPlace: { en: "You're #{rank} on the leaderboard", es: "Estás #{rank} en la tabla" },
+  rankLoading: { en: "Fetching your rank...", es: "Buscando tu posición..." },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

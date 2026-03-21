@@ -572,5 +572,10 @@ export class GameEngine {
 
     // Update dog scale and position
     this.dog.updateScale(width, this.groundY, startX);
+
+    // Update all existing obstacles to match the new ground level
+    for (const obstacle of this.obstacles) {
+      obstacle.updateGroundY(this.groundY);
+    }
   }
 }

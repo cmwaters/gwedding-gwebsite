@@ -99,6 +99,10 @@ export class Obstacle {
     return this.position.x < -100;
   }
 
+  updateGroundY(groundY: number): void {
+    this.groundY = groundY;
+  }
+
   update(normalizedDelta: number = 1): void {
     const moveAmount = this.speed * normalizedDelta;
     this.position.x -= moveAmount;

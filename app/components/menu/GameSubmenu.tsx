@@ -18,6 +18,8 @@ export interface GameResult {
 interface GameSubmenuProps {
   gameResult: GameResult | null;
   hasBeatenVilla: boolean;
+  playerRank: number | null;
+  playerHighScore: number | null;
   onStartNormal: () => void;
   onStartEndless: () => void;
   onMenu: () => void;
@@ -26,6 +28,8 @@ interface GameSubmenuProps {
 export default function GameSubmenu({
   gameResult,
   hasBeatenVilla,
+  playerRank,
+  playerHighScore,
   onStartNormal,
   onStartEndless,
   onMenu,
@@ -178,9 +182,22 @@ export default function GameSubmenu({
             {t("score")}: {gameResult.score}
           </p>
           {gameResult.scoreSubmitted && (
-            <p className="text-amber/60 text-[10px] sm:text-xs" style={{ marginBottom: '1rem' }}>
-              {t("scoreSubmitted")}
-            </p>
+            <div style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center' }}>
+              {playerRank !== null ? (
+                <>
+                  <p className="text-amber/70 text-[10px] sm:text-xs">
+                    {t("yourHighScore")}: {playerHighScore}
+                  </p>
+                  <p className="text-amber text-[10px] sm:text-xs">
+                    {t("currentPlace").replace("{rank}", String(playerRank))}
+                  </p>
+                </>
+              ) : (
+                <p className="text-amber/50 text-[10px] sm:text-xs animate-pulse">
+                  {t("rankLoading")}
+                </p>
+              )}
+            </div>
           )}
 
           {/* Hint for low scores */}

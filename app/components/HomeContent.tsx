@@ -70,8 +70,6 @@ export default function HomeContent() {
             if (idx !== -1) {
               setPlayerRank(idx + 1);
               setPlayerHighScore(scores[idx].score);
-              // Sync server high score into engine so HUD stays consistent across devices
-              gameRef.current?.syncHighScore(scores[idx].score);
             }
           })
           .catch((err) => console.error("Score submit/rank fetch failed:", err));

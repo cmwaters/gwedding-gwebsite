@@ -13,6 +13,7 @@ export interface GameCanvasHandle {
   startEndless: (difficulty?: DifficultyConfig) => void;
   returnToIdle: () => void;
   setLeaderboardScores: (scores: { name: string; score: number }[], playerName: string | null) => void;
+  syncHighScore: (serverScore: number) => void;
 }
 
 interface GameCanvasProps {
@@ -39,6 +40,9 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(
       },
       setLeaderboardScores: (scores: { name: string; score: number }[], playerName: string | null) => {
         gameRef.current?.setLeaderboardScores(scores, playerName);
+      },
+      syncHighScore: (serverScore: number) => {
+        gameRef.current?.syncHighScore(serverScore);
       },
     }));
 

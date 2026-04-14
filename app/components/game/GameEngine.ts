@@ -635,6 +635,16 @@ export class GameEngine {
     this.animationFrameId = requestAnimationFrame(this.gameLoop);
   };
 
+  /** Sync the player's server-side high score into the engine and localStorage.
+   *  Called by React after fetching the leaderboard, so the HUD always reflects
+   *  the all-time best rather than just the current device's localStorage value. */
+  public syncHighScore(serverScore: number): void {
+    if (serverScore > this.highScore) {
+      this.highScore = serverScore;
+      this.saveHighScore();
+    }
+  }
+
   /** Store leaderboard scores for flag rendering in endless mode.
    *  Called by React before startGame("endless"). Re-evaluated on every restart
    *  so the flags reflect the player's updated high score. */

@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
         .from("guests")
         .update({
           is_attending: guest.is_attending,
+          invite_received: true,
           email: body.email,
           comments: body.comments?.trim() || null,
           updated_at: new Date().toISOString(),

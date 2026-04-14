@@ -64,9 +64,17 @@ export async function PATCH(
         return NextResponse.json({ error: "Failed to update guest" }, { status: 500 });
       }
     } else if (action === "set_attending") {
+      // Only set invite_received when actually setting an attendance value (not clearing it)
+      const attendingUpdate: Record<string, unknown> = {
+        is_attending: body.is_attending ?? null,
+        updated_at: new Date().toISOString(),
+      };
+      if (body.is_attending !== null && body.is_attending !== undefined) {
+        attendingUpdate.invite_received = true;
+      }
       const { error } = await supabase
         .from("guests")
-        .update({ is_attending: body.is_attending ?? null, updated_at: new Date().toISOString() })
+        .update(attendingUpdate)
         .eq("id", id);
 
       if (error) {

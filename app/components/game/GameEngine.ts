@@ -547,7 +547,8 @@ export class GameEngine {
     const { ctx } = this;
     const groundY = this.groundY;
     const pixelFont = '"Press Start 2P", monospace';
-    const labelFontSize = Math.max(5, Math.min(8, this.canvas.width / 100));
+    const labelFontSize = Math.max(10, Math.min(16, this.canvas.width / 50));
+    const flagTop = 100; // Post starts 100px from top of canvas
 
     // Pixels the background moves per score point — used to map score delta → screen distance
     const pixelsPerPoint =
@@ -564,18 +565,18 @@ export class GameEngine {
 
       const color = flag.isOwn ? COLORS.flagRed : COLORS.flagYellow;
 
-      // Post — thin line from ground to top of canvas
+      // Post — thin line from ground up, stopping 100px from top
       ctx.save();
       ctx.strokeStyle = color;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(screenX, groundY);
-      ctx.lineTo(screenX, 0);
+      ctx.lineTo(screenX, flagTop);
       ctx.stroke();
 
-      // Pennant — right-pointing triangle near top of post
+      // Pennant — right-pointing triangle at top of post
       const pX = screenX;
-      const pY = 6;
+      const pY = flagTop;
       const pW = 18;
       const pH = 13;
       ctx.fillStyle = color;

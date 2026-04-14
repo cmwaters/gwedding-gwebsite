@@ -145,6 +145,9 @@ export default function HomeContent() {
             intervalDecrement: 350 / targetScore,
           };
         }
+
+        // Pass scores to game engine for flag rendering
+        gameRef.current?.setLeaderboardScores(scores, groupName);
       } catch (err) {
         console.error("Difficulty calibration fetch failed:", err);
       }

@@ -21,6 +21,12 @@ export type DogState = "running" | "jumping";
 
 export type ObstacleType = "low" | "high";
 
+export interface ScoreFlag {
+  score: number;
+  labels: string[];   // merged player names at this score
+  isOwn: boolean;     // true = player's own high score (red), false = others (yellow)
+}
+
 export interface GameConfig {
   canvas: {
     width: number;

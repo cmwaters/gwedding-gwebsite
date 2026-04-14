@@ -1,4 +1,4 @@
-import { GameState, ObstacleType } from "./types";
+import { GameState, ObstacleType, ScoreFlag } from "./types";
 import { COLORS, GAME_CONFIG, STORAGE_KEYS } from "./constants";
 import { Dog } from "./entities/Dog";
 import { Obstacle } from "./entities/Obstacle";
@@ -58,6 +58,11 @@ export class GameEngine {
   private coupleLoaded: boolean = false;
   private coupleX: number = 0; // X position where couple stands (set when arriving)
   private coupleOffsetFromVilla: number = 0; // Fixed offset from villa position (set once)
+
+  // Leaderboard flags (endless mode only)
+  private leaderboardFlags: ScoreFlag[] = [];
+  private rawLeaderboardScores: { name: string; score: number }[] = [];
+  private leaderboardPlayerName: string | null = null;
 
   // Callback when game ends (gameover or won)
   public onGameEnd: ((result: "gameover" | "won", score: number, finishScore: number) => void) | null = null;
@@ -233,6 +238,13 @@ export class GameEngine {
     // Apply difficulty overrides (used in endless mode to calibrate against leaderboard)
     this.activeSpeedIncrement = difficulty?.speedIncrement ?? GAME_CONFIG.obstacles.speedIncrement;
     this.activeIntervalDecrement = difficulty?.intervalDecrement ?? GAME_CONFIG.obstacles.intervalDecrement;
+
+    // Rebuild flags each run so they reflect the latest high score
+    if (this.endless) {
+      this.leaderboardFlags = this.buildFlags();
+    } else {
+      this.leaderboardFlags = [];
+    }
   }
 
   /** Called externally by React to return to idle (e.g. when showing menu) */
@@ -419,6 +431,9 @@ export class GameEngine {
       this.drawCouple();
     }
 
+    // Draw leaderboard score flags (endless mode only)
+    this.drawFlags();
+
     // Draw obstacles
     for (const obstacle of this.obstacles) {
       obstacle.draw(this.ctx);
@@ -525,6 +540,76 @@ export class GameEngine {
     }
   }
 
+  private drawFlags(): void {
+    if (!this.endless || this.leaderboardFlags.length === 0) return;
+    if (this.gameState !== "playing" && this.gameState !== "arriving") return;
+
+    const { ctx } = this;
+    const groundY = this.groundY;
+    const pixelFont = '"Press Start 2P", monospace';
+    const labelFontSize = Math.max(5, Math.min(8, this.canvas.width / 100));
+
+    // Pixels the background moves per score point — used to map score delta → screen distance
+    const pixelsPerPoint =
+      (this.currentSpeed * GAME_CONFIG.background.scrollSpeed) /
+      GAME_CONFIG.scoring.pointsPerFrame;
+
+    const dogCenterX = this.dog.position.x + this.dog.width / 2;
+
+    for (const flag of this.leaderboardFlags) {
+      const screenX = dogCenterX + (flag.score - this.score) * pixelsPerPoint;
+
+      // Skip if fully off screen (generous margin so labels entering from right are visible)
+      if (screenX < -10 || screenX > this.canvas.width + 200) continue;
+
+      const color = flag.isOwn ? COLORS.flagRed : COLORS.flagYellow;
+
+      // Post — thin line from ground to top of canvas
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(screenX, groundY);
+      ctx.lineTo(screenX, 0);
+      ctx.stroke();
+
+      // Pennant — right-pointing triangle near top of post
+      const pX = screenX;
+      const pY = 6;
+      const pW = 18;
+      const pH = 13;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(pX, pY);
+      ctx.lineTo(pX, pY + pH);
+      ctx.lineTo(pX + pW, pY + pH / 2);
+      ctx.closePath();
+      ctx.fill();
+
+      // Label — name(s) + score, to the right of the pennant tip
+      if (flag.labels.length > 0) {
+        const labelX = pX + pW + 3;
+        const labelY = pY + pH / 2 + labelFontSize / 2;
+        const nameText = flag.labels.join(", ");
+        const scoreText = String(Math.floor(flag.score));
+
+        ctx.font = `${labelFontSize}px ${pixelFont}`;
+        ctx.textAlign = "left";
+
+        // Subtle shadow so text is legible against the sky
+        ctx.fillStyle = "rgba(0,0,0,0.35)";
+        ctx.fillText(nameText, labelX + 1, labelY + 1);
+        ctx.fillText(scoreText, labelX + 1, labelY + labelFontSize + 3);
+
+        ctx.fillStyle = color;
+        ctx.fillText(nameText, labelX, labelY);
+        ctx.fillText(scoreText, labelX, labelY + labelFontSize + 2);
+      }
+
+      ctx.restore();
+    }
+  }
+
   private gameLoop = (timestamp: number): void => {
     const rawDelta = timestamp - this.lastTime;
     this.lastTime = timestamp;
@@ -548,6 +633,66 @@ export class GameEngine {
 
     this.animationFrameId = requestAnimationFrame(this.gameLoop);
   };
+
+  /** Store leaderboard scores for flag rendering in endless mode.
+   *  Called by React before startGame("endless"). Re-evaluated on every restart
+   *  so the flags reflect the player's updated high score. */
+  public setLeaderboardScores(
+    scores: { name: string; score: number }[],
+    playerName: string | null
+  ): void {
+    this.rawLeaderboardScores = scores;
+    this.leaderboardPlayerName = playerName;
+    // Flags are built fresh in startGame("endless") once highScore is known
+  }
+
+  private buildFlags(): ScoreFlag[] {
+    const scores = this.rawLeaderboardScores;
+    const playerName = this.leaderboardPlayerName;
+    const playerHS = this.highScore;
+
+    // Exclude the player's own leaderboard entry — it's represented by the red flag
+    const others = scores.filter((e) => e.name !== playerName && e.score > 0);
+    const sorted = [...others].sort((a, b) => b.score - a.score);
+
+    // All entries above player's high score + up to 2 below
+    const above = sorted.filter((e) => e.score > playerHS);
+    const below = sorted.filter((e) => e.score <= playerHS).slice(0, 2);
+
+    // Merge entries within 5 score points (sorted ascending for grouping)
+    const toMerge = [...above, ...below].sort((a, b) => a.score - b.score);
+    const merged: ScoreFlag[] = [];
+    for (const entry of toMerge) {
+      const last = merged[merged.length - 1];
+      if (last && !last.isOwn && Math.abs(entry.score - last.score) <= 5) {
+        last.score = Math.max(last.score, entry.score);
+        last.labels.push(entry.name);
+      } else {
+        merged.push({ score: entry.score, labels: [entry.name], isOwn: false });
+      }
+    }
+
+    // Own red flag — only when the player has a recorded high score
+    if (playerHS > 0) {
+      const nearby = merged.find((f) => Math.abs(f.score - playerHS) <= 5);
+      if (nearby) {
+        // Promote the nearby yellow flag to red
+        nearby.isOwn = true;
+        nearby.score = Math.max(nearby.score, playerHS);
+        if (playerName && !nearby.labels.includes(playerName)) {
+          nearby.labels.push(playerName);
+        }
+      } else {
+        merged.push({
+          score: playerHS,
+          labels: playerName ? [playerName] : [],
+          isOwn: true,
+        });
+      }
+    }
+
+    return merged.sort((a, b) => a.score - b.score);
+  }
 
   public start(): void {
     this.lastTime = performance.now();

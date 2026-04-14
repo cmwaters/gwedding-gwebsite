@@ -12,6 +12,7 @@ export interface GameCanvasHandle {
   startGame: () => void;
   startEndless: (difficulty?: DifficultyConfig) => void;
   returnToIdle: () => void;
+  setLeaderboardScores: (scores: { name: string; score: number }[], playerName: string | null) => void;
 }
 
 interface GameCanvasProps {
@@ -35,6 +36,9 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(
       },
       returnToIdle: () => {
         gameRef.current?.returnToIdle();
+      },
+      setLeaderboardScores: (scores: { name: string; score: number }[], playerName: string | null) => {
+        gameRef.current?.setLeaderboardScores(scores, playerName);
       },
     }));
 

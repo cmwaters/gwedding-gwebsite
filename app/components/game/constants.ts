@@ -5,6 +5,8 @@ export const COLORS = {
   orange: "#FF9F1C",
   white: "#FFFFFF",
   skyBlue: "#00cdf4",
+  flagYellow: "#FFD700",
+  flagRed: "#FF4444",
 } as const;
 
 export const GAME_CONFIG: GameConfig = {

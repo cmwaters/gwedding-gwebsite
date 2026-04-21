@@ -369,6 +369,9 @@ export default function AdminPage() {
     ? filtered.filter((g) => !g.rsvp_by || g.rsvp_by >= today)
     : filtered;
 
+  const invitedCount = filterByTab(guests, "pending").length + filterByTab(guests, "coming").length;
+  const atCapacity = invitedCount >= 122;
+
   const crossTabResults = q
     ? TABS.filter((t) => t.id !== tab).map((t) => ({
         tabId: t.id,
@@ -464,8 +467,8 @@ export default function AdminPage() {
             {t.label} ({filterByTab(guests, t.id).length})
           </button>
         ))}
-        <span className="ml-auto text-xs text-cream/50 whitespace-nowrap pl-2">
-          {filterByTab(guests, "pending").length + filterByTab(guests, "coming").length} invited
+        <span className={`ml-auto text-xs whitespace-nowrap pl-2 ${atCapacity ? "text-coral" : "text-cream/50"}`}>
+          {invitedCount}/122 invited
         </span>
       </div>
 
@@ -487,8 +490,9 @@ export default function AdminPage() {
             <button
               type="button"
               onClick={bulkMarkInvited}
-              disabled={bulkLoading}
-              className="text-[10px] px-2 py-1 border border-amber text-amber hover:bg-amber hover:text-charcoal transition-colors disabled:opacity-50 whitespace-nowrap shrink-0"
+              disabled={bulkLoading || atCapacity}
+              title={atCapacity ? "At capacity (122 invited)" : undefined}
+              className="text-[10px] px-2 py-1 border border-amber text-amber hover:bg-amber hover:text-charcoal transition-colors disabled:opacity-30 disabled:cursor-not-allowed whitespace-nowrap shrink-0"
             >
               Mark Invited
             </button>
@@ -557,7 +561,9 @@ export default function AdminPage() {
           <button
             type="button"
             onClick={getLink}
-            className="text-[10px] px-2 py-1 border border-cream/50 text-cream/70 hover:bg-cream/10 transition-colors whitespace-nowrap shrink-0"
+            disabled={atCapacity}
+            title={atCapacity ? "At capacity (122 invited)" : undefined}
+            className="text-[10px] px-2 py-1 border border-cream/50 text-cream/70 hover:bg-cream/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed whitespace-nowrap shrink-0"
           >
             {getLinkCopied ? "Copied!" : "Get Link"}
           </button>

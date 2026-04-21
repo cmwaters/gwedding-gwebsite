@@ -348,14 +348,14 @@ export default function AdminPage() {
   }
 
   const q = search.trim().toLowerCase();
-  const filtered = filterByTab(guests, tab).filter(
-    (g) =>
-      !q ||
-      g.name?.toLowerCase().includes(q) ||
-      g.email?.toLowerCase().includes(q) ||
-      g.invite_code?.toLowerCase().includes(q) ||
-      g.comments?.toLowerCase().includes(q)
-  );
+  const matchesQuery = (g: GuestRow) =>
+    !q ||
+    g.name?.toLowerCase().includes(q) ||
+    g.email?.toLowerCase().includes(q) ||
+    g.invite_code?.toLowerCase().includes(q) ||
+    g.comments?.toLowerCase().includes(q);
+
+  const filtered = filterByTab(guests, tab).filter(matchesQuery);
 
   const showResponseCols = tab === "coming" || tab === "not_coming";
   const showRsvpBy = tab === "to_be_invited" || tab === "pending";
@@ -369,7 +369,28 @@ export default function AdminPage() {
     ? filtered.filter((g) => !g.rsvp_by || g.rsvp_by >= today)
     : filtered;
 
-  const renderRows = (rows: GuestRow[]) => rows.map((row) => {
+  const crossTabResults = q
+    ? TABS.filter((t) => t.id !== tab).map((t) => ({
+        tabId: t.id,
+        label: t.label,
+        rows: filterByTab(guests, t.id).filter(matchesQuery),
+      })).filter((r) => r.rows.length > 0)
+    : [];
+
+  const makeTableHead = (rsvpBy: boolean, responseCols: boolean) => (
+    <thead>
+      <tr className="text-amber border-b border-cream/50">
+        <th className="px-3 py-2 text-left border border-cream/30">invite_code</th>
+        <th className="px-3 py-2 text-left border border-cream/30">name</th>
+        {rsvpBy && <th className="px-3 py-2 text-left border border-cream/30 w-[90px]">rsvp_by</th>}
+        {responseCols && <th className="px-3 py-2 text-left border border-cream/30">email</th>}
+        {responseCols && <th className="px-3 py-2 text-left border border-cream/30 max-w-[240px]">comments</th>}
+        <th className="px-3 py-2 text-left border border-cream/30 w-[70px]">hotel</th>
+      </tr>
+    </thead>
+  );
+
+  const renderRows = (rows: GuestRow[], rsvpBy: boolean, responseCols: boolean) => rows.map((row) => {
     const isSelected = selectedIds.has(row.id);
     return (
       <tr
@@ -379,19 +400,19 @@ export default function AdminPage() {
       >
         <td className="px-3 py-2 border border-cream/30">{row.invite_code || "—"}</td>
         <td className="px-3 py-2 border border-cream/30">{row.name || "—"}</td>
-        {showRsvpBy && (
+        {rsvpBy && (
           <td className="px-3 py-2 border border-cream/30 text-cream/60">
             {row.rsvp_by
               ? new Date(row.rsvp_by + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })
               : <span className="text-cream/30">—</span>}
           </td>
         )}
-        {showResponseCols && (
+        {responseCols && (
           <td className="px-3 py-2 border border-cream/30 text-cream/70">
             {row.email || <span className="text-cream/30">—</span>}
           </td>
         )}
-        {showResponseCols && (
+        {responseCols && (
           <td className="px-3 py-2 border border-cream/30 text-cream/70 max-w-[240px] truncate">
             {row.comments || <span className="text-cream/30">—</span>}
           </td>
@@ -411,18 +432,7 @@ export default function AdminPage() {
     );
   });
 
-  const tableHead = (
-    <thead>
-      <tr className="text-amber border-b border-cream/50">
-        <th className="px-3 py-2 text-left border border-cream/30">invite_code</th>
-        <th className="px-3 py-2 text-left border border-cream/30">name</th>
-        {showRsvpBy && <th className="px-3 py-2 text-left border border-cream/30 w-[90px]">rsvp_by</th>}
-        {showResponseCols && <th className="px-3 py-2 text-left border border-cream/30">email</th>}
-        {showResponseCols && <th className="px-3 py-2 text-left border border-cream/30 max-w-[240px]">comments</th>}
-        <th className="px-3 py-2 text-left border border-cream/30 w-[70px]">hotel</th>
-      </tr>
-    </thead>
-  );
+  const tableHead = makeTableHead(showRsvpBy, showResponseCols);
 
   return (
     <div className="h-screen bg-charcoal text-cream p-4 sm:p-6 overflow-y-auto overflow-x-hidden">
@@ -437,7 +447,7 @@ export default function AdminPage() {
         )}
       </div>
 
-      <div className="flex gap-2 mb-4 border-b border-cream/30 pb-2 overflow-x-auto">
+      <div className="flex items-center gap-2 mb-4 border-b border-cream/30 pb-2 overflow-x-auto">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -454,6 +464,9 @@ export default function AdminPage() {
             {t.label} ({filterByTab(guests, t.id).length})
           </button>
         ))}
+        <span className="ml-auto text-xs text-cream/50 whitespace-nowrap pl-2">
+          {filterByTab(guests, "pending").length + filterByTab(guests, "coming").length} invited
+        </span>
       </div>
 
       <input
@@ -709,19 +722,35 @@ export default function AdminPage() {
                 </p>
                 <table className="w-full border-collapse text-xs border border-coral/30">
                   {tableHead}
-                  <tbody>{renderRows(overdueFiltered)}</tbody>
+                  <tbody>{renderRows(overdueFiltered, showRsvpBy, showResponseCols)}</tbody>
                 </table>
               </div>
             )}
             {mainFiltered.length > 0 && (
               <table className="w-full border-collapse text-xs">
                 {tableHead}
-                <tbody>{renderRows(mainFiltered)}</tbody>
+                <tbody>{renderRows(mainFiltered, showRsvpBy, showResponseCols)}</tbody>
               </table>
             )}
           </>
         )}
       </div>
+
+      {crossTabResults.map(({ tabId, label, rows }) => {
+        const ctRsvpBy = tabId === "to_be_invited" || tabId === "pending";
+        const ctResponseCols = tabId === "coming" || tabId === "not_coming";
+        return (
+          <div key={tabId} className="mt-6 overflow-x-auto">
+            <p className="text-cream/50 text-[10px] uppercase tracking-wide mb-1">
+              {label} ({rows.length})
+            </p>
+            <table className="w-full border-collapse text-xs opacity-60">
+              {makeTableHead(ctRsvpBy, ctResponseCols)}
+              <tbody>{renderRows(rows, ctRsvpBy, ctResponseCols)}</tbody>
+            </table>
+          </div>
+        );
+      })}
     </div>
   );
 }

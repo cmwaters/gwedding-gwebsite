@@ -97,29 +97,55 @@ export const translations = {
     es: "APERITIVO DE BIENVENIDA",
   },
   eveningGatheringDetails: {
-    en: "6:00 PM - 9:00 PM @ Our home (TBD)",
-    es: "6:00 PM - 9:00 PM @ Nuestra casa (TBD)",
+    en: "7:00 PM - 10:00 PM @ Salodia",
+    es: "7:00 PM - 10:00 PM @ Salodia",
   },
   eveningGatheringDesc: {
-    en: "Charcuterie board, pizzas & drinks",
-    es: "Tabla de embutidos, pizzas y bebidas",
+    en: "Drinks, aperitivo snacks & gelato. Walking distance from Hotel Galeazzi and Spiaggia d'Oro.",
+    es: "Bebidas, aperitivos y helado. A poca distancia a pie del Hotel Galeazzi y Spiaggia d'Oro.",
+  },
+  tennis: { en: "TENNIS (OPTIONAL)", es: "TENIS (OPCIONAL)" },
+  tennisDetails: {
+    en: "2:00 PM - 5:00 PM @ Rimbazello Tennis Courts",
+    es: "2:00 PM - 5:00 PM @ Rimbazello Tennis Courts",
+  },
+  guestArrival: { en: "GUEST ARRIVAL", es: "LLEGADA DE INVITADOS" },
+  guestArrivalDetails: {
+    en: "1:45 PM @ Our home — Via della Seriola 15, Salò",
+    es: "1:45 PM @ Nuestra casa — Via della Seriola 15, Salò",
+  },
+  ceremonyAccess: {
+    en: "Hotel Galeazzi is directly beside the ceremony location.",
+    es: "El Hotel Galeazzi está justo al lado del lugar de la ceremonia.",
   },
   ceremony: { en: "CEREMONY", es: "CEREMONIA" },
   ceremonyDetails: {
-    en: "~2:00 PM @ Our home",
-    es: "~2:00 PM @ Nuestra casa",
+    en: "2:00 PM @ Our home, in the garden — Via della Seriola 15, Salò",
+    es: "2:00 PM @ Nuestra casa, en el jardín — Via della Seriola 15, Salò",
   },
   dinnerAndParty: {
     en: "RECEPTION",
     es: "RECEPCIÓN",
   },
   dinnerAndPartyDetails: {
-    en: "3:00 PM - Midnight @ Villa Bettoni",
-    es: "3:00 PM - Medianoche @ Villa Bettoni",
+    en: "4:00 PM - Midnight @ Villa Bettoni, Bogliaco",
+    es: "4:00 PM - Medianoche @ Villa Bettoni, Bogliaco",
   },
-  moreInfoToCome: {
-    en: "More info to come",
-    es: "Más información próximamente",
+  receptionShuttleDetails: {
+    en: "4:00 PM: Shuttles to Villa Bettoni + aperitivo starts. Transportation is provided after the ceremony.",
+    es: "4:00 PM: Traslados a Villa Bettoni e inicio del aperitivo. Habrá transporte después de la ceremonia.",
+  },
+  weddingDinnerDetails: {
+    en: "6:30 PM: Dinner",
+    es: "6:30 PM: Cena",
+  },
+  earlyReturnDetails: {
+    en: "From 10:00 PM: Early return shuttle to Hotel Galeazzi",
+    es: "Desde las 10:00 PM: Traslado de regreso anticipado al Hotel Galeazzi",
+  },
+  celebrationEndDetails: {
+    en: "Midnight: Celebrations finish and shuttles return to Hotel Galeazzi",
+    es: "Medianoche: Fin de la celebración y traslados de regreso al Hotel Galeazzi",
   },
 
   // ── Travel ──

@@ -25,8 +25,8 @@ export default function RetroPanel({ title, onBack, children }: RetroPanelProps)
   }, [onBack]);
 
   return (
-    <div className="w-full h-full bg-cornflower/70 flex flex-col items-center justify-center overflow-y-auto p-4 sm:p-6 animate-fade-in">
-      <div className="w-full max-w-2xl">
+    <div className="w-full h-full bg-cornflower/70 flex flex-col items-center overflow-y-auto p-4 sm:p-6 animate-fade-in">
+      <div className="w-full max-w-2xl shrink-0 my-auto">
         {/* Title */}
         <h2 className="text-amber text-base sm:text-lg text-center" style={{ marginBottom: '1.5rem' }}>
           {title}

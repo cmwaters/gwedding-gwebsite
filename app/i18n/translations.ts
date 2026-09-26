@@ -163,6 +163,10 @@ export const translations = {
 
   // ── Info ──
   venue: { en: "VENUE", es: "LUGAR" },
+  venueSalodia: {
+    en: "Salodia - Via Trento 18, 25087 Barbarano di Salò, Italy",
+    es: "Salodia - Via Trento 18, 25087 Barbarano di Salò, Italia",
+  },
   venueIsa: {
     en: "Villa Isa - Via della Seriola 15, Salo, Italy",
     es: "Villa Isa - Via della Seriola 15, Salo, Italia",

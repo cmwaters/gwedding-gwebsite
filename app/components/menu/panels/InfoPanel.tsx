@@ -10,6 +10,11 @@ export default function InfoPanel() {
     <div className="text-cream">
       <PanelSection title={t("venue")}>
         <p>
+          <a href="https://tinyurl.com/salodia" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80">
+            {t("venueSalodia")}
+          </a>
+        </p>
+        <p style={{ marginTop: '0.25rem' }}>
           <a href="https://maps.app.goo.gl/cXWvxknccLBs5c8d8" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80">
             {t("venueIsa")}
           </a>

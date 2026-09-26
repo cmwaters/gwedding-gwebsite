@@ -34,9 +34,6 @@ export default function SchedulePanel() {
       <PanelSection title={t("dinnerAndParty")} border={false}>
         <p>{t("dinnerAndPartyDetails")}</p>
         <p style={{ marginTop: '0.5rem' }}>{t("receptionShuttleDetails")}</p>
-        <p style={{ marginTop: '0.5rem' }}>{t("weddingDinnerDetails")}</p>
-        <p style={{ marginTop: '0.5rem' }}>{t("earlyReturnDetails")}</p>
-        <p style={{ marginTop: '0.5rem' }}>{t("celebrationEndDetails")}</p>
       </PanelSection>
     </div>
   );

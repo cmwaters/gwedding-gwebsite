@@ -132,20 +132,8 @@ export const translations = {
     es: "4:00 PM - Medianoche @ Villa Bettoni, Bogliaco",
   },
   receptionShuttleDetails: {
-    en: "4:00 PM: Shuttles to Villa Bettoni + aperitivo starts. Transportation is provided after the ceremony.",
-    es: "4:00 PM: Traslados a Villa Bettoni e inicio del aperitivo. Habrá transporte después de la ceremonia.",
-  },
-  weddingDinnerDetails: {
-    en: "6:30 PM: Dinner",
-    es: "6:30 PM: Cena",
-  },
-  earlyReturnDetails: {
-    en: "From 10:00 PM: Early return shuttle to Hotel Galeazzi",
-    es: "Desde las 10:00 PM: Traslado de regreso anticipado al Hotel Galeazzi",
-  },
-  celebrationEndDetails: {
-    en: "Midnight: Celebrations finish and shuttles return to Hotel Galeazzi",
-    es: "Medianoche: Fin de la celebración y traslados de regreso al Hotel Galeazzi",
+    en: "Shuttles will run from Hotel Galeazzi to Villa Bettoni, with return shuttles to Hotel Galeazzi from 10:00 PM onwards.",
+    es: "Habrá traslados del Hotel Galeazzi a Villa Bettoni, con traslados de regreso al Hotel Galeazzi desde las 10:00 PM.",
   },
 
   // ── Travel ──

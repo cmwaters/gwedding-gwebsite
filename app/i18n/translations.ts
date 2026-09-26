@@ -176,10 +176,6 @@ export const translations = {
     es: "Detalles próximamente",
   },
   shuttleTimetable: { en: "SHUTTLE TIMETABLE", es: "HORARIO DE TRASLADO" },
-  shuttleTimetableSoon: {
-    en: "Times to be confirmed",
-    es: "Horarios por confirmar",
-  },
   dressCode: { en: "DRESS CODE", es: "CÓDIGO DE VESTIMENTA" },
   dressCodeAperitivoTitle: { en: "Aperitivo Night", es: "Noche de Aperitivo" },
   dressCodeAperitivoDesc: {

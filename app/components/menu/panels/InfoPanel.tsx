@@ -27,7 +27,7 @@ export default function InfoPanel() {
         <p style={{ marginTop: '0.2rem' }}>{t("dressCodeWeddingDesc")}</p>
       </PanelSection>
       <PanelSection title={t("shuttleTimetable")}>
-        <p>{t("shuttleTimetableSoon")}</p>
+        <p>{t("receptionShuttleDetails")}</p>
       </PanelSection>
       <PanelSection border={false}>
         <p>{t("stillHaveQuestions")}</p>

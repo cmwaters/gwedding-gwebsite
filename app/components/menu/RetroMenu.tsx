@@ -40,6 +40,10 @@ export default function RetroMenu({ onSelect }: RetroMenuProps) {
     (index: number) => {
       const item = menuItems[index];
       if (item.locked) return;
+      if (item.screen === "gallery") {
+        window.location.assign(SITE_CONFIG.galleryUrl);
+        return;
+      }
       onSelect(item.screen);
     },
     [onSelect, menuItems]
@@ -130,11 +134,8 @@ export default function RetroMenu({ onSelect }: RetroMenuProps) {
       </h1>
 
       {/* Subtitle */}
-      <p className="text-cream text-xs sm:text-sm text-center" style={{ marginBottom: '0.75rem' }}>
+      <p className="text-cream text-xs sm:text-sm text-center" style={{ marginBottom: '2rem' }}>
         {t("menuInvite")}
-      </p>
-      <p className="text-white text-xs sm:text-sm font-bold text-center" style={{ marginBottom: '2rem' }}>
-        {t("menuDate")}
       </p>
 
       {/* RSVP button — only shown for authorised guests, separated with white border */}

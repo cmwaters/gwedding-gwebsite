@@ -3,12 +3,8 @@ export type Language = "en" | "es";
 export const translations = {
   // ── Menu ──
   menuInvite: {
-    en: "Invite you to their Wedding!",
-    es: "¡Les invitan a su Boda!",
-  },
-  menuDate: {
-    en: "26-27 September 2026",
-    es: "26-27 Septiembre 2026",
+    en: "Thanks you for coming to their Wedding!",
+    es: "¡Les dan las gracias por venir a su Boda!",
   },
   menuStart: { en: "Play", es: "Jugar" },
   menuSchedule: { en: "Schedule", es: "Programa" },

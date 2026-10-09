@@ -1,5 +1,6 @@
 export const SITE_CONFIG = {
-  galleryUnlocked: false,
+  galleryUnlocked: true,
+  galleryUrl: "https://photos.app.goo.gl/GVZzFHpuCHtcD9jJA",
   coupleNames: "Cal & Euge",
   venue: "Villa Bettoni",
 } as const;

@@ -134,7 +134,7 @@ export default function RetroMenu({ onSelect }: RetroMenuProps) {
       </h1>
 
       {/* Subtitle */}
-      <p className="text-cream text-xs sm:text-sm text-center" style={{ marginBottom: '2rem' }}>
+      <p className="w-full max-w-sm text-cream text-xs sm:text-sm text-center text-balance leading-relaxed" style={{ marginBottom: '2rem' }}>
         {t("menuInvite")}
       </p>
 

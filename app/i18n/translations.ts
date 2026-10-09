@@ -3,7 +3,7 @@ export type Language = "en" | "es";
 export const translations = {
   // ── Menu ──
   menuInvite: {
-    en: "Thanks you for coming to their Wedding!",
+    en: "Thank you for coming to their Wedding!",
     es: "¡Les dan las gracias por venir a su Boda!",
   },
   menuStart: { en: "Play", es: "Jugar" },
